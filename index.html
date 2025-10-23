@@ -136,9 +136,45 @@
         }
 
         .emotion-card.selected {
-            background: #4facfe;
             color: white;
             border-color: #4facfe;
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 15px 35px rgba(79, 172, 254, 0.3);
+        }
+
+        .emotion-card.selected[data-emotion="happy"] {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            border-color: #28a745;
+        }
+
+        .emotion-card.selected[data-emotion="sad"] {
+            background: linear-gradient(135deg, #6f42c1 0%, #495057 100%);
+            border-color: #6f42c1;
+        }
+
+        .emotion-card.selected[data-emotion="angry"] {
+            background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+            border-color: #dc3545;
+        }
+
+        .emotion-card.selected[data-emotion="neutral"] {
+            background: linear-gradient(135deg, #6c757d 0%, #adb5bd 100%);
+            border-color: #6c757d;
+        }
+
+        .emotion-card.selected[data-emotion="fear"] {
+            background: linear-gradient(135deg, #fd7e14 0%, #ffc107 100%);
+            border-color: #fd7e14;
+        }
+
+        .emotion-card.selected[data-emotion="surprise"] {
+            background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+            border-color: #20c997;
+        }
+
+        .emotion-card.selected[data-emotion="disgust"] {
+            background: linear-gradient(135deg, #e83e8c 0%, #6f42c1 100%);
+            border-color: #e83e8c;
         }
 
         .emotion-emoji {
@@ -152,19 +188,47 @@
         }
 
         .sentence-display {
-            background: #f8f9fa;
-            border: 2px solid #e9ecef;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 3px solid #4facfe;
             border-radius: 15px;
-            padding: 25px;
+            padding: 30px;
             text-align: center;
             margin-bottom: 25px;
-            font-size: 1.2rem;
-            line-height: 1.6;
-            color: #333;
-            min-height: 80px;
+            font-size: 1.4rem;
+            font-weight: 600;
+            line-height: 1.8;
+            color: #2c3e50;
+            min-height: 90px;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 8px 25px rgba(79, 172, 254, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sentence-display::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .sentence-text {
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+            padding: 0 10px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.3);
+            backdrop-filter: blur(5px);
         }
 
         .recording-controls {
@@ -380,8 +444,14 @@
             
             .sentence-display {
                 padding: 20px;
+                font-size: 1.2rem;
+                min-height: 80px;
+                border-width: 2px;
+            }
+            
+            .sentence-text {
                 font-size: 1.1rem;
-                min-height: 70px;
+                padding: 8px 12px;
             }
             
             .record-btn {
@@ -523,11 +593,11 @@
                 <div class="emotion-grid">
                     <div class="emotion-card" onclick="selectEmotion('happy')" data-emotion="happy">
                         <span class="emotion-emoji">😊</span>
-                        <h3>دڵخۆشی و خۆشحاڵی</h3>
+                        <h3>دڵخۆشی</h3>
                     </div>
                     <div class="emotion-card" onclick="selectEmotion('sad')" data-emotion="sad">
                         <span class="emotion-emoji">😢</span>
-                        <h3>خەمۆکی</h3>
+                        <h3>خەمباری</h3>
                     </div>
                     <div class="emotion-card" onclick="selectEmotion('angry')" data-emotion="angry">
                         <span class="emotion-emoji">😠</span>
@@ -535,7 +605,7 @@
                     </div>
                     <div class="emotion-card" onclick="selectEmotion('neutral')" data-emotion="neutral">
                         <span class="emotion-emoji">😐</span>
-                        <h3>هاوسەنگ</h3>
+                        <h3>بێلایەنی</h3>
                     </div>
                     <div class="emotion-card" onclick="selectEmotion('fear')" data-emotion="fear">
                         <span class="emotion-emoji">😨</span>
@@ -562,7 +632,13 @@
                 <h2 id="currentEmotionTitle" style="margin-bottom: 20px; text-align: center;"></h2>
                 
                 <div class="instructions">
-                    <p><strong>ڕێنمایی:</strong> تکایە ئەم رستەیە بە شێوەیەک بخوێنەوە کە هەستەکە بە ڕاستی دەربڕێت. هەر رستەیەک ٣ جار دووبارە بکەرەوە.</p>
+                    <p><strong>📢 ڕێنمایی گرنگ:</strong></p>
+                    <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 10px; margin: 10px 0; border-left: 4px solid #4facfe;">
+                        <strong>1️⃣</strong> رستەی هایلایتکراو بە دەنگی بەرز بخوێنەرەوە<br>
+                        <strong>2️⃣</strong> هەست و سۆزی <span id="currentEmotionName" style="color: #dc3545; font-weight: bold;"></span> بە ڕاستی دەربڕە<br>
+                        <strong>3️⃣</strong> هەر رستەیەک <span style="color: #28a745; font-weight: bold;">٣ جار</span> دووبارە بکەرەوە<br>
+                        <strong>4️⃣</strong> بەرامبەر مایکڕۆفۆن ڕاست بوەستە و بە ڕوونی بدوێ
+                    </div>
                 </div>
 
                 <div class="sentence-display" id="sentenceDisplay">
@@ -635,59 +711,59 @@
         // Data structures
         const emotions = {
             happy: {
-                name: 'دڵخۆشی و خۆشحاڵی',
+                name: 'دڵخۆشی',
                 sentences: [
-                    'ڕۆژێکی زۆر زۆر خۆشحاڵە!',
-                    'ڕۆژی دڵخۆش و هاوسەرگیریم هاتووە',
-                    'ڕاحاتم'
+                    'ئەمڕۆ ڕۆژێکی زۆر خۆشە!',
+                    'زۆر دڵخۆشم بەم هەواڵە.',
+                    'ژیان زۆر جوانە زۆر.'
                 ]
             },
             sad: {
-                name: 'خەمۆکی',
+                name: 'خەمباری',
                 sentences: [
-                    'هەست بە خەمۆکی دەکەم',
-                    'ڕۆژێکی ئاحوساز بوو',
-                    'دڵم دەکەوێت'
+                    'هەست بە خەمباری دەکەم.',
+                    'ڕۆژێکی زۆر ناخۆش بوو.',
+                    'ئەمڕۆ دڵم زۆر تەنگە.'
                 ]
             },
             angry: {
                 name: 'تووڕەیی',
                 sentences: [
-                    'ئەمە کاری ڕەوا نییە!',
-                    'زۆر تووڕەم',
-                    'بەسە ئەم شتە!'
+                    'ئەمە قبوڵ ناکرێت بەڕاستی!',
+                    'وازم لێبێنن زۆر تووڕەم.',
+                    'بەسیەتی ئیتر لاچۆ لەبەرچاوم!'
                 ]
             },
             neutral: {
-                name: 'هاوسەنگ',
+                name: 'بێلایەنی',
                 sentences: [
-                    'سڵاو، چۆنیت؟',
-                    'ئەمە کارێکی ئاسایە',
-                    'کەسایەتیە ئاساییەکان'
+                    'سڵاو، چۆنی، باشی؟',
+                    'ئەمە کورسیە بۆ دانیشت بەکاردێت.',
+                    'ئەمڕۆ کەشوهەوا ئاساییە.'
                 ]
             },
             fear: {
                 name: 'ترس',
                 sentences: [
-                    'ناو خوای، زۆر دەترسم!',
-                    'ئایا ڕوودەدات؟',
-                    'کاکە ئەم کارە دەدەم'
+                    'ئای خوایە، زۆر دەترسم!',
+                    'یەکێک تێمبگەیەنێ،ئەوە چی ڕوودەدات؟',
+                    'تکایە یارمەتیم بدەن زۆر دەترسم.'
                 ]
             },
             surprise: {
                 name: 'سەرسوڕمان',
                 sentences: [
-                    'نەوەک، ئەرەسیت؟',
-                    'واکەم ئەکا!',
-                    'ئایا؟'
+                    'ئۆه، بەڕاستی شتێکی سەیرە؟',
+                    'باوەڕ ناکەم زۆر سەیرە!',
+                    'چی،چی، ئەوە بەجدیتە؟'
                 ]
             },
             disgust: {
                 name: 'بێزاری',
                 sentences: [
-                    'ئەمە زۆر ئاحوساز نییە',
-                    'ئەوەڕۆ',
-                    'ئەموومەتەوە'
+                    'ئەمە زۆر ناخۆشە لێیبێزاربووم.',
+                    'قێزەونە بەڕاستی.',
+                    'نامەوێت بیبینم بێتاقتی کردم.'
                 ]
             }
         };
@@ -858,14 +934,43 @@
             document.getElementById('currentEmotionTitle').textContent = 
                 `ریکۆردی هەستی: ${emotions[selectedEmotion].name}`;
             
+            // Update emotion name in instructions
+            const emotionNameSpan = document.getElementById('currentEmotionName');
+            if (emotionNameSpan) {
+                emotionNameSpan.textContent = emotions[selectedEmotion].name;
+                emotionNameSpan.style.color = getEmotionColor(selectedEmotion);
+            }
+            
             displayCurrentSentence();
             updateRecordingStatus();
+        }
+
+        function getEmotionColor(emotion) {
+            const colorMap = {
+                'happy': '#28a745',      // green
+                'sad': '#6f42c1',        // purple  
+                'angry': '#dc3545',      // red
+                'neutral': '#6c757d',    // gray
+                'fear': '#fd7e14',       // orange
+                'surprise': '#20c997',   // teal
+                'disgust': '#e83e8c'     // pink
+            };
+            return colorMap[emotion] || '#4facfe';
         }
 
         function displayCurrentSentence() {
             const sentences = emotions[selectedEmotion].sentences;
             const currentSentence = sentences[currentSentenceIndex];
-            document.getElementById('sentenceDisplay').textContent = currentSentence;
+            const sentenceDisplay = document.getElementById('sentenceDisplay');
+            
+            // Add highlighting to the sentence
+            sentenceDisplay.innerHTML = `<span class="sentence-text">${currentSentence}</span>`;
+            
+            // Add pulse animation to draw attention
+            sentenceDisplay.style.animation = 'none';
+            setTimeout(() => {
+                sentenceDisplay.style.animation = 'pulse 2s ease-in-out';
+            }, 10);
         }
 
         function updateRecordingStatus() {
