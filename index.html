@@ -637,7 +637,8 @@
                         <strong>1️⃣</strong> رستەی هایلایتکراو بە دەنگی بەرز بخوێنەرەوە<br>
                         <strong>2️⃣</strong> هەست و سۆزی <span id="currentEmotionName" style="color: #dc3545; font-weight: bold;"></span> بە ڕاستی دەربڕە<br>
                         <strong>3️⃣</strong> هەر رستەیەک <span style="color: #28a745; font-weight: bold;">٣ جار</span> دووبارە بکەرەوە<br>
-                        <strong>4️⃣</strong> بەرامبەر مایکڕۆفۆن ڕاست بوەستە و بە ڕوونی بدوێ
+                        <strong>4️⃣</strong> بەرامبەر مایکڕۆفۆن ڕاست بوەستە و بە ڕوونی بدوێ<br>
+                        <strong>⏰</strong> ماکسیمۆم <span style="color: #fd7e14; font-weight: bold;">٢ چرکە</span> بۆ هەر ریکۆرد
                     </div>
                 </div>
 
@@ -1040,12 +1041,12 @@
                 // Start timer
                 startTimer();
                 
-                // Auto-stop after 5 seconds
+                // Auto-stop after 2 seconds
                 setTimeout(() => {
                     if (isRecording) {
                         stopRecordingAudio();
                     }
-                }, 5000);
+                }, 2000);
                 
             } catch (err) {
                 console.error('Recording error:', err);
@@ -1078,7 +1079,18 @@
                 const seconds = Math.floor(elapsed / 1000);
                 const milliseconds = Math.floor((elapsed % 1000) / 10);
                 
-                document.getElementById('timer').textContent = 
+                // Change color as we approach 2 seconds
+                const timerElement = document.getElementById('timer');
+                if (elapsed > 1500) { // Last 0.5 seconds
+                    timerElement.style.color = '#dc3545'; // Red
+                    timerElement.style.fontWeight = 'bold';
+                } else if (elapsed > 1000) { // After 1 second
+                    timerElement.style.color = '#fd7e14'; // Orange
+                } else {
+                    timerElement.style.color = '#28a745'; // Green
+                }
+                
+                timerElement.textContent = 
                     `${seconds.toString().padStart(2, '0')}:${milliseconds.toString().padStart(2, '0')}`;
             }, 10);
         }
@@ -1616,7 +1628,7 @@ Auto-generated for Google Drive integration
                     sentenceIndex: recording.sentenceIndex,
                     recordingIndex: recording.recordingIndex,
                     timestamp: recording.timestamp,
-                    estimatedDuration: '1-5 seconds',
+                    estimatedDuration: '1-2 seconds',
                     quality: 'high',
                     sampleRate: '44.1kHz',
                     channels: 'mono'
