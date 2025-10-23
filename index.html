@@ -455,18 +455,65 @@
             <!-- Step 1: User Info -->
             <div class="step active" id="step1">
                 <h2 style="margin-bottom: 20px;">زانیاری کەسی</h2>
+                
                 <div class="form-group">
                     <label for="participantName">ناوی سیانی:</label>
                     <input type="text" id="participantName" placeholder="تکایە ناوی سیانیت بنووسە" 
-                           oninput="updateFolderPreview()">
-                    
-                    <div id="folderPreview" style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 8px; font-size: 0.85rem; color: #666; display: none;">
-                        <strong>📁 فۆلدەری داتاکان:</strong> 
-                        <code id="previewPath" style="color: #4facfe;"></code>
-                        <br>
-                        <small>فایلەکان بەم شێوەیە ڕێکدەخرێن بۆ هەڵگرتنی دواجار</small>
-                    </div>
+                           oninput="updateFolderPreview()" required>
                 </div>
+
+                <div class="form-group">
+                    <label for="participantGender">ڕەگەز:</label>
+                    <select id="participantGender" style="width: 100%; padding: 15px; border: 2px solid #e1e5e9; border-radius: 10px; font-size: 1rem; text-align: right;" required>
+                        <option value="">هەڵبژاردنی ڕەگەز</option>
+                        <option value="male">نێر</option>
+                        <option value="female">مێ</option>
+                        <option value="other">هیتر</option>
+                        <option value="prefer_not_say">باشتر نالێم</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="participantAge">تەمەن:</label>
+                    <select id="participantAge" style="width: 100%; padding: 15px; border: 2px solid #e1e5e9; border-radius: 10px; font-size: 1rem; text-align: right;" required>
+                        <option value="">هەڵبژاردنی تەمەن</option>
+                        <option value="18-25">18-25 ساڵ</option>
+                        <option value="26-35">26-35 ساڵ</option>
+                        <option value="36-45">36-45 ساڵ</option>
+                        <option value="46-55">46-55 ساڵ</option>
+                        <option value="56-65">56-65 ساڵ</option>
+                        <option value="65+">65+ ساڵ</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="participantDialect">شێوەزاری کوردی:</label>
+                    <select id="participantDialect" style="width: 100%; padding: 15px; border: 2px solid #e1e5e9; border-radius: 10px; font-size: 1rem; text-align: right;" required>
+                        <option value="">هەڵبژاردنی شێوەزار</option>
+                        <option value="sorani">سۆرانی</option>
+                        <option value="kurmanji">کورمانجی</option>
+                        <option value="hawrami">هەورامی</option>
+                        <option value="kalhori">کەلهۆری</option>
+                        <option value="other">هیتر</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="participantEmail">ئیمێڵ (ئیختیاری):</label>
+                    <input type="email" id="participantEmail" placeholder="example@email.com" 
+                           style="width: 100%; padding: 15px; border: 2px solid #e1e5e9; border-radius: 10px; font-size: 1rem; text-align: left; direction: ltr;">
+                    <small style="color: #666; font-size: 0.8rem;">
+                        💡 ئەگەر ئیمێڵت هەیە، دەتوانین داتاکان بۆ Google Drive یان ئیمێڵەکەت بنێرین
+                    </small>
+                </div>
+                
+                <div id="folderPreview" style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 8px; font-size: 0.85rem; color: #666; display: none;">
+                    <strong>📁 فۆلدەری داتاکان:</strong> 
+                    <code id="previewPath" style="color: #4facfe;"></code>
+                    <br>
+                    <small>فایلەکان بەم شێوەیە ڕێکدەخرێن بۆ هەڵگرتنی دواجار</small>
+                </div>
+
                 <button class="btn" onclick="nextStep()">دەست پێکردن</button>
             </div>
 
@@ -557,12 +604,16 @@
                     <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
                         <button class="btn" onclick="downloadData()">📁 دروستکردنی فۆلدەر</button>
                         <button class="btn" onclick="downloadAsZip()" style="background: #28a745;">📦 داگرتنی ZIP</button>
+                        <button class="btn" onclick="sendByEmail()" style="background: #dc3545;" id="emailBtn">📧 ناردن بە ئیمێڵ</button>
+                    </div>
+                    
+                    <div style="margin-top: 15px;">
                         <button class="btn" onclick="startNewSession()">🔄 دەست پێکردنەوە</button>
                     </div>
                     
                     <div style="margin-top: 15px; font-size: 0.85rem; color: #666;">
                         <strong>💡 ڕێگەی پێشنیارکراو:</strong> 
-                        "📁 دروستکردنی فۆلدەر" - ڕاستەوخۆ فۆلدەری ڕێکخراو لە دەستگاکەتدا دروست دەکات
+                        <span id="recommendedMethod">"📁 دروستکردنی فۆلدەر" - ڕاستەوخۆ فۆلدەری ڕێکخراو لە دەستگاکەتدا دروست دەکات</span>
                     </div>
                 </div>
 
@@ -643,6 +694,10 @@
         // Global variables
         let currentStep = 1;
         let participantName = '';
+        let participantGender = '';
+        let participantAge = '';
+        let participantDialect = '';
+        let participantEmail = '';
         let selectedEmotion = '';
         let currentSentenceIndex = 0;
         let currentRecordingIndex = 0;
@@ -677,13 +732,44 @@
         }
 
         function nextStep() {
-            const nameInput = document.getElementById('participantName');
             if (currentStep === 1) {
+                // Validate required fields
+                const nameInput = document.getElementById('participantName');
+                const genderSelect = document.getElementById('participantGender');
+                const ageSelect = document.getElementById('participantAge');
+                const dialectSelect = document.getElementById('participantDialect');
+                const emailInput = document.getElementById('participantEmail');
+
                 if (!nameInput.value.trim()) {
                     alert('تکایە ناوی سیانیت بنووسە');
+                    nameInput.focus();
                     return;
                 }
+
+                if (!genderSelect.value) {
+                    alert('تکایە ڕەگەزت هەڵبژێرە');
+                    genderSelect.focus();
+                    return;
+                }
+
+                if (!ageSelect.value) {
+                    alert('تکایە تەمەنت هەڵبژێرە');
+                    ageSelect.focus();
+                    return;
+                }
+
+                if (!dialectSelect.value) {
+                    alert('تکایە شێوەزاری کوردیت هەڵبژێرە');
+                    dialectSelect.focus();
+                    return;
+                }
+
+                // Store demographic information
                 participantName = nameInput.value.trim();
+                participantGender = genderSelect.value;
+                participantAge = ageSelect.value;
+                participantDialect = dialectSelect.value;
+                participantEmail = emailInput.value.trim();
             }
 
             // Hide current step
@@ -1021,7 +1107,178 @@
             
             // Update folder structure preview
             const cleanName = participantName.replace(/[^a-zA-Z0-9\u0600-\u06FF\u0750-\u077F]/g, '_');
-            document.getElementById('folderStructurePreview').textContent = `${cleanName}/${selectedEmotion}/`;
+            
+            // Update recommended method based on email availability
+            const recommendedElement = document.getElementById('recommendedMethod');
+            const emailBtn = document.getElementById('emailBtn');
+            
+            if (participantEmail) {
+                recommendedElement.innerHTML = '"📧 ناردن بە ئیمێڵ" - خێراترین ڕێگە بۆ پاشەکەوتکردن';
+                emailBtn.style.display = 'inline-block';
+            } else {
+                recommendedElement.innerHTML = '"📁 دروستکردنی فۆلدەر" - ڕاستەوخۆ فۆلدەری ڕێکخراو لە دەستگاکەتدا دروست دەکات';
+                emailBtn.style.display = 'none';
+            }
+        }
+
+        // Email sending functionality
+        async function sendByEmail() {
+            if (!participantEmail) {
+                alert('ئیمێڵ دابین نەکراوە! تکایە ڕێگەیەکی تر هەڵبژێرە.');
+                return;
+            }
+
+            try {
+                // Create ZIP file first
+                const zip = new JSZip();
+                const cleanName = participantName.replace(/[^a-zA-Z0-9\u0600-\u06FF\u0750-\u077F]/g, '_');
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+                
+                // Create folder structure in ZIP
+                const participantFolder = zip.folder(cleanName);
+                const emotionFolder = participantFolder.folder(selectedEmotion);
+                
+                // Add audio files
+                for (let i = 0; i < allRecordings.length; i++) {
+                    const recording = allRecordings[i];
+                    const fileName = `sentence_${recording.sentenceIndex + 1}_record_${recording.recordingIndex + 1}.wav`;
+                    emotionFolder.file(fileName, recording.blob);
+                }
+                
+                // Add metadata
+                const metadata = createMetadata();
+                emotionFolder.file('metadata.json', JSON.stringify(metadata, null, 2));
+                
+                // Show progress
+                const progressDiv = document.createElement('div');
+                progressDiv.className = 'alert alert-success';
+                progressDiv.innerHTML = `
+                    <strong>📧 ئامادەکردن بۆ ئیمێڵ...</strong><br>
+                    تکایە چەند چرکەیەک چاوەڕێبکە...
+                `;
+                document.querySelector('#step4 .download-section').appendChild(progressDiv);
+                
+                // Generate ZIP
+                const zipBlob = await zip.generateAsync({
+                    type: 'blob',
+                    compression: 'DEFLATE',
+                    compressionOptions: { level: 6 }
+                });
+                
+                // Create email content
+                const emailSubject = `Kurdish Emotion Dataset - ${participantName} - ${selectedEmotion}`;
+                const emailBody = `
+سڵاو،
+
+داتای دەنگی هەستەکان ئامادەیە:
+
+👤 بەشداربوو: ${participantName}
+🚻 ڕەگەز: ${getGenderText(participantGender)}
+🎂 تەمەن: ${participantAge}
+🗣️ شێوەزار: ${getDialectText(participantDialect)}
+😊 هەست: ${emotions[selectedEmotion].name}
+📊 کۆی ریکۆردەکان: ${allRecordings.length}
+📅 بەروار: ${new Date().toLocaleDateString('ku')}
+
+فایلی ZIP ی پێوەندراو ناوی:
+${cleanName}_${selectedEmotion}_dataset_${timestamp}.zip
+
+ساختاری ناوەوە:
+${cleanName}/
+└── ${selectedEmotion}/
+    ├── sentence_1_record_1.wav
+    ├── sentence_1_record_2.wav
+    ├── sentence_1_record_3.wav
+    ├── sentence_2_record_1.wav
+    ├── sentence_2_record_2.wav
+    ├── sentence_2_record_3.wav
+    ├── sentence_3_record_1.wav
+    ├── sentence_3_record_2.wav
+    ├── sentence_3_record_3.wav
+    └── metadata.json
+
+سوپاس بۆ بەشداریکردنت لە پڕۆژەی داتاسێتی دەنگی کوردی!
+
+--
+Kurdish Emotion Speech Dataset
+https://jihad-copter.github.io/kurdish-emotion-speech-dataset/
+                `.trim();
+
+                // Create downloadable ZIP for manual email attachment
+                const zipUrl = URL.createObjectURL(zipBlob);
+                const zipLink = document.createElement('a');
+                zipLink.href = zipUrl;
+                zipLink.download = `${cleanName}_${selectedEmotion}_dataset_${timestamp}.zip`;
+                
+                // Create mailto link
+                const mailtoLink = `mailto:${participantEmail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+                
+                // Update progress with instructions
+                progressDiv.innerHTML = `
+                    <strong>📧 ئامادە بۆ ناردن!</strong><br><br>
+                    <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #ddd; margin: 10px 0;">
+                        <strong>هەنگاوەکان:</strong>
+                        <ol style="text-align: right; margin: 10px 0;">
+                            <li>ZIP فایلەکە دابگرە</li>
+                            <li>ئیمێڵ ئەپەکە بکەرەوە</li>
+                            <li>ZIP فایلەکە attach بکە</li>
+                            <li>بۆ ${participantEmail} بینێرە</li>
+                        </ol>
+                    </div>
+                    <div style="margin: 15px 0;">
+                        <button class="btn" onclick="document.querySelector('#hiddenZipLink').click()" style="background: #28a745;">
+                            📦 ZIP فایل دابگرە
+                        </button>
+                        <button class="btn" onclick="window.open('${mailtoLink}')" style="background: #dc3545;">
+                            📧 ئیمێڵ بکەرەوە
+                        </button>
+                    </div>
+                `;
+                
+                // Add hidden download link
+                zipLink.id = 'hiddenZipLink';
+                zipLink.style.display = 'none';
+                document.body.appendChild(zipLink);
+                
+                // Clean up after delay
+                setTimeout(() => {
+                    URL.revokeObjectURL(zipUrl);
+                    document.body.removeChild(zipLink);
+                }, 30000);
+                
+            } catch (err) {
+                console.error('Email preparation error:', err);
+                
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'alert alert-error';
+                errorDiv.innerHTML = `
+                    <strong>⚠️ خەطا لە ئامادەکردنی ئیمێڵدا</strong><br>
+                    تکایە ڕێگەیەکی تر هەڵبژێرە.
+                `;
+                document.querySelector('#step4 .download-section').appendChild(errorDiv);
+            }
+        }
+
+        // Helper functions for demographic text
+        function getGenderText(gender) {
+            const genderMap = {
+                'male': 'نێر',
+                'female': 'مێ',
+                'other': 'هیتر',
+                'prefer_not_say': 'باشتر نالێم'
+            };
+            return genderMap[gender] || gender;
+        }
+
+        function getDialectText(dialect) {
+            const dialectMap = {
+                'sorani': 'سۆرانی',
+                'kurmanji': 'کورمانجی',
+                'hawrami': 'هەورامی',
+                'kalhori': 'کەلهۆری',
+                'other': 'هیتر'
+            };
+            return dialectMap[dialect] || dialect;
         }
 
         // Check for File System Access API support
@@ -1158,8 +1415,20 @@
             const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
             
             return {
-                participant: participantName,
-                emotion: selectedEmotion,
+                participant: {
+                    name: participantName,
+                    gender: participantGender,
+                    age: participantAge,
+                    dialect: participantDialect,
+                    email: participantEmail || 'not_provided'
+                },
+                session: {
+                    emotion: selectedEmotion,
+                    timestamp: timestamp,
+                    totalRecordings: allRecordings.length,
+                    language: 'ku',
+                    platform: 'GitHub Pages'
+                },
                 recordings: allRecordings.map((recording, index) => ({
                     filename: `sentence_${recording.sentenceIndex + 1}_record_${recording.recordingIndex + 1}.wav`,
                     fullPath: `${cleanParticipantName}/${selectedEmotion}/sentence_${recording.sentenceIndex + 1}_record_${recording.recordingIndex + 1}.wav`,
@@ -1171,13 +1440,12 @@
                     duration: 5000,
                     quality: 'high'
                 })),
-                metadata: {
-                    totalRecordings: allRecordings.length,
-                    timestamp: timestamp,
-                    language: 'ku',
+                technical: {
                     userAgent: navigator.userAgent,
-                    platform: 'GitHub Pages',
-                    folderStructure: `${cleanParticipantName}/${selectedEmotion}/`
+                    folderStructure: `${cleanParticipantName}/${selectedEmotion}/`,
+                    sampleRate: 44100,
+                    channels: 1,
+                    format: 'WAV'
                 }
             };
         }
@@ -1289,6 +1557,10 @@
             // Reset all variables
             currentStep = 1;
             participantName = '';
+            participantGender = '';
+            participantAge = '';
+            participantDialect = '';
+            participantEmail = '';
             selectedEmotion = '';
             currentSentenceIndex = 0;
             currentRecordingIndex = 0;
@@ -1298,11 +1570,16 @@
             document.getElementById('step4').classList.remove('active');
             document.getElementById('step1').classList.add('active');
             document.getElementById('participantName').value = '';
+            document.getElementById('participantGender').value = '';
+            document.getElementById('participantAge').value = '';
+            document.getElementById('participantDialect').value = '';
+            document.getElementById('participantEmail').value = '';
             document.querySelectorAll('.emotion-card').forEach(card => {
                 card.classList.remove('selected');
             });
             document.getElementById('startRecordingBtn').disabled = true;
             document.getElementById('recordingsList').innerHTML = '';
+            document.getElementById('folderPreview').style.display = 'none';
             
             updateProgressBar();
         }
