@@ -686,6 +686,7 @@
                     </div>
                     
                     <div style="margin-top: 15px;">
+                        <button class="btn" onclick="recordAnotherEmotion()" style="background: #17a2b8; color: white;">🎭 تۆماری هەستی تر</button>
                         <button class="btn" onclick="startNewSession()">🔄 دەست پێکردنەوە</button>
                     </div>
                     
@@ -787,6 +788,7 @@
         let recordingStartTime = 0;
         let timerInterval = null;
         let audioContext = null;
+        let recordedEmotions = []; // Track completed emotions
 
         // Initialize app
         document.addEventListener('DOMContentLoaded', function() {
@@ -794,6 +796,52 @@
             // GitHub Pages automatically provides HTTPS, so no need for browser support check
             console.log('Kurdish Emotion Speech Dataset App - Running on GitHub Pages with HTTPS');
         });
+
+        // Functions to track recorded emotions
+        function addToRecordedEmotions(emotion) {
+            if (!recordedEmotions.includes(emotion)) {
+                recordedEmotions.push(emotion);
+                updateRecordedEmotionsDisplay();
+            }
+        }
+
+        function updateRecordedEmotionsDisplay() {
+            const step2Content = document.querySelector('#step2 .content');
+            let existingDisplay = document.getElementById('recordedEmotionsDisplay');
+            
+            if (recordedEmotions.length > 0) {
+                if (!existingDisplay) {
+                    existingDisplay = document.createElement('div');
+                    existingDisplay.id = 'recordedEmotionsDisplay';
+                    existingDisplay.style.marginBottom = '20px';
+                    step2Content.insertBefore(existingDisplay, step2Content.firstChild);
+                }
+                
+                existingDisplay.innerHTML = `
+                    <div style="background: linear-gradient(135deg, #e8f5e8 0%, #f0f8f0 100%); 
+                                border: 2px solid #28a745; border-radius: 15px; padding: 15px; margin-bottom: 20px;">
+                        <h3 style="color: #28a745; margin: 0 0 10px 0; text-align: center;">
+                            ✅ هەستە تەواوکراوەکان
+                        </h3>
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+                            ${recordedEmotions.map(emotion => `
+                                <span style="background: #28a745; color: white; padding: 5px 15px; 
+                                            border-radius: 20px; font-size: 0.9rem; font-weight: bold;">
+                                    ${emotions[emotion].name}
+                                </span>
+                            `).join('')}
+                        </div>
+                        <div style="text-align: center; margin-top: 10px; font-size: 0.85rem; color: #666;">
+                            کۆی تەواوکراو: ${recordedEmotions.length} لە ${Object.keys(emotions).length}
+                        </div>
+                        ${recordedEmotions.length === Object.keys(emotions).length ? 
+                            '<div style="text-align: center; margin-top: 5px; color: #28a745; font-weight: bold;">🎉 هەموو هەستەکان تەواو کراون!</div>' : ''}
+                    </div>
+                `;
+            } else if (existingDisplay) {
+                existingDisplay.remove();
+            }
+        }
 
         function updateFolderPreview() {
             const nameInput = document.getElementById('participantName');
@@ -1214,6 +1262,11 @@
                 audioStream.getTracks().forEach(track => track.stop());
             }
             
+            // Add current emotion to recorded emotions
+            if (selectedEmotion) {
+                addToRecordedEmotions(selectedEmotion);
+            }
+            
             // Go to download step
             document.getElementById('step3').classList.remove('active');
             document.getElementById('step4').classList.add('active');
@@ -1222,6 +1275,27 @@
             
             // Update total recordings count
             document.getElementById('totalRecordingsCount').textContent = allRecordings.length;
+            
+            // Update success message with recorded emotions info
+            const successAlert = document.querySelector('#step4 .alert-success');
+            if (recordedEmotions.length > 1) {
+                successAlert.innerHTML = `
+                    <strong>زۆر سوپاس!</strong> تۆ <span style="color: #28a745; font-weight: bold;">${recordedEmotions.length} هەست</span> 
+                    بە سەرکەوتووی تۆمار کرد:<br>
+                    <div style="margin-top: 8px;">
+                        ${recordedEmotions.map(emotion => `
+                            <span style="background: #28a745; color: white; padding: 3px 8px; 
+                                        border-radius: 12px; font-size: 0.8rem; margin: 2px;">
+                                ${emotions[emotion].name}
+                            </span>
+                        `).join(' ')}
+                    </div>
+                `;
+            } else {
+                successAlert.innerHTML = `
+                    <strong>زۆر سوپاس!</strong> تۆ بە سەرکەوتووی <span id="totalRecordingsCount">${allRecordings.length}</span> ریکۆردت تەواو کرد.
+                `;
+            }
             
             // Update folder structure preview
             const cleanName = participantName.replace(/[^a-zA-Z0-9\u0600-\u06FF\u0750-\u077F]/g, '_');
@@ -1979,6 +2053,82 @@ Auto-generated for Google Drive integration
             document.querySelector('#step4 .download-section').appendChild(guideDiv);
         }
 
+        function recordAnotherEmotion() {
+            // Store current emotion before resetting
+            const currentEmotion = selectedEmotion;
+            
+            // Keep participant info but reset recording-specific data
+            selectedEmotion = '';
+            currentSentenceIndex = 0;
+            currentRecordingIndex = 0;
+            allRecordings = [];
+            
+            // Reset timer
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            
+            // Stop any ongoing recording
+            if (isRecording) {
+                stopRecordingAudio();
+            }
+            
+            // Reset UI components
+            document.getElementById('currentEmotionTitle').textContent = 'هەستی نوێ هەڵبژێرە';
+            document.getElementById('sentenceDisplay').textContent = 'هەستێک هەڵبژێرە بۆ دەستپێکردن...';
+            document.getElementById('timer').textContent = '00:00';
+            document.getElementById('timer').style.color = '#333';
+            document.getElementById('currentRecording').textContent = '0';
+            document.getElementById('totalRecordings').textContent = '0';
+            
+            // Clear emotion selection
+            document.querySelectorAll('.emotion-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Reset buttons
+            document.getElementById('recordBtn').textContent = '🎤';
+            document.getElementById('recordBtn').classList.remove('recording');
+            document.getElementById('recordBtn').disabled = false;
+            document.getElementById('playBtn').disabled = true;
+            document.getElementById('nextBtn').disabled = true;
+            document.getElementById('finishBtn').disabled = true;
+            
+            // Clear recordings list
+            const recordingsList = document.getElementById('recordingsList');
+            recordingsList.innerHTML = '';
+            
+            // Navigate back to emotion selection
+            document.getElementById('step4').classList.remove('active');
+            document.getElementById('step2').classList.add('active');
+            currentStep = 2;
+            updateProgressBar();
+            
+            // Show success message
+            const successMsg = document.createElement('div');
+            successMsg.className = 'alert alert-success';
+            successMsg.style.marginBottom = '20px';
+            successMsg.innerHTML = `
+                <strong>✅ تۆماری ${emotions[currentEmotion]?.name || 'هەست'} تەواو بوو!</strong><br>
+                ئێستا هەستێکی تر هەڵبژێرە بۆ بەردەوامبوون. زانیاریەکانت پاشەکەوت کراون.
+            `;
+            
+            // Add message to emotion selection screen
+            const step2Content = document.querySelector('#step2 .content');
+            step2Content.insertBefore(successMsg, step2Content.firstChild);
+            
+            // Remove message after 5 seconds
+            setTimeout(() => {
+                if (successMsg.parentNode) {
+                    successMsg.remove();
+                }
+            }, 5000);
+            
+            // Update recorded emotions display
+            updateRecordedEmotionsDisplay();
+        }
+
         function startNewSession() {
             // Reset all variables
             currentStep = 1;
@@ -1991,6 +2141,7 @@ Auto-generated for Google Drive integration
             currentSentenceIndex = 0;
             currentRecordingIndex = 0;
             allRecordings = [];
+            recordedEmotions = []; // Reset recorded emotions
             
             // Reset UI
             document.getElementById('step4').classList.remove('active');
@@ -2000,6 +2151,17 @@ Auto-generated for Google Drive integration
             document.getElementById('participantAge').value = '';
             document.getElementById('participantDialect').value = '';
             document.getElementById('participantEmail').value = '';
+            
+            // Clear recorded emotions display
+            const recordedDisplay = document.getElementById('recordedEmotionsDisplay');
+            if (recordedDisplay) {
+                recordedDisplay.remove();
+            }
+            
+            // Clear any success messages
+            document.querySelectorAll('.alert-success').forEach(alert => {
+                alert.remove();
+            });
             document.querySelectorAll('.emotion-card').forEach(card => {
                 card.classList.remove('selected');
             });
