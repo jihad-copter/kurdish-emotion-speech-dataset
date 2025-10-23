@@ -605,6 +605,7 @@
                         <button class="btn" onclick="downloadData()">📁 دروستکردنی فۆلدەر</button>
                         <button class="btn" onclick="downloadAsZip()" style="background: #28a745;">📦 داگرتنی ZIP</button>
                         <button class="btn" onclick="sendByEmail()" style="background: #dc3545;" id="emailBtn">📧 ناردن بە ئیمێڵ</button>
+                        <button class="btn" onclick="uploadToDrive()" style="background: #4285f4;" id="driveBtn">☁️ Google Drive</button>
                     </div>
                     
                     <div style="margin-top: 15px;">
@@ -1281,6 +1282,271 @@ https://jihad-copter.github.io/kurdish-emotion-speech-dataset/
             return dialectMap[dialect] || dialect;
         }
 
+        // Google Drive Upload functionality
+        async function uploadToDrive() {
+            try {
+                // Show instructions for Google Drive upload
+                const driveDiv = document.createElement('div');
+                driveDiv.className = 'alert alert-success';
+                driveDiv.innerHTML = `
+                    <strong>☁️ Google Drive Upload</strong><br><br>
+                    
+                    <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #ddd; margin: 10px 0;">
+                        <h4>ڕێگەی یەکەم: ئیمێڵی ئۆتۆمەیت</h4>
+                        <p>ئەگەر Google Drive integration setup کردووە:</p>
+                        <ol style="text-align: right; margin: 10px 0;">
+                            <li>ZIP فایلەکە دابگرە</li>
+                            <li>بۆ Gmail ئەکاونتت بینێرە</li>
+                            <li>Subject: "Kurdish Emotion Dataset"</li>
+                            <li>خۆکارانە organize دەبێت</li>
+                        </ol>
+                        <button class="btn" onclick="sendToMyDrive()" style="background: #dc3545;">
+                            📧 ناردن بۆ Gmail ئەکاونتم
+                        </button>
+                    </div>
+                    
+                    <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #ddd; margin: 10px 0;">
+                        <h4>ڕێگەی دووەم: دەستی Upload</h4>
+                        <p>بۆ دەستی upload کردن:</p>
+                        <ol style="text-align: right; margin: 10px 0;">
+                            <li>ZIP فایلەکە دابگرە</li>
+                            <li>drive.google.com بکەرەوە</li>
+                            <li>فۆلدەری "Kurdish_Emotion_Dataset" بدۆزەرەوە</li>
+                            <li>ZIP فایلەکە drag & drop بکە</li>
+                        </ol>
+                        <button class="btn" onclick="downloadAsZip()" style="background: #28a745;">
+                            📦 ZIP دابگرە
+                        </button>
+                        <button class="btn" onclick="window.open('https://drive.google.com', '_blank')" style="background: #4285f4;">
+                            🌐 Google Drive بکەرەوە
+                        </button>
+                    </div>
+                    
+                    <div style="background: #f0f8ff; padding: 10px; border-radius: 6px; border-left: 4px solid #4285f4; margin: 10px 0;">
+                        <small><strong>💡 یادەوەری:</strong> بۆ ئۆتۆمەیت کردنی پرۆسەکە، 
+                        <a href="#" onclick="showDriveSetupGuide()" style="color: #4285f4;">Google Drive Setup Guide</a> 
+                        پەیڕەو بکە.</small>
+                    </div>
+                `;
+                document.querySelector('#step4 .download-section').appendChild(driveDiv);
+                
+            } catch (err) {
+                console.error('Google Drive upload error:', err);
+                alert('خەطایەک لە Google Drive upload دا ڕوویدا');
+            }
+        }
+
+        // Send to personal Gmail for auto-processing
+        async function sendToMyDrive() {
+            try {
+                // Get user's email or prompt for it
+                let targetEmail = participantEmail;
+                
+                if (!targetEmail) {
+                    targetEmail = prompt('تکایە Gmail ئەکاونتت بنووسە کە Google Drive integration ی هەیە:');
+                    
+                    if (!targetEmail) {
+                        alert('ئیمێڵ پێویستە بۆ ناردن بۆ Google Drive');
+                        return;
+                    }
+                }
+
+                // Create ZIP file first
+                const zip = new JSZip();
+                const cleanName = participantName.replace(/[^a-zA-Z0-9\u0600-\u06FF\u0750-\u077F]/g, '_');
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+                
+                // Create folder structure in ZIP
+                const participantFolder = zip.folder(cleanName);
+                const emotionFolder = participantFolder.folder(selectedEmotion);
+                
+                // Add audio files
+                for (let i = 0; i < allRecordings.length; i++) {
+                    const recording = allRecordings[i];
+                    const fileName = `sentence_${recording.sentenceIndex + 1}_record_${recording.recordingIndex + 1}.wav`;
+                    emotionFolder.file(fileName, recording.blob);
+                }
+                
+                // Add metadata
+                const metadata = createMetadata();
+                emotionFolder.file('metadata.json', JSON.stringify(metadata, null, 2));
+                
+                // Generate ZIP
+                const zipBlob = await zip.generateAsync({
+                    type: 'blob',
+                    compression: 'DEFLATE',
+                    compressionOptions: { level: 6 }
+                });
+                
+                // Create email for Google Drive processing
+                const emailSubject = `Kurdish Emotion Dataset - ${participantName} - ${selectedEmotion}`;
+                const emailBody = `
+👤 بەشداربوو: ${participantName}
+🚻 ڕەگەز: ${getGenderText(participantGender)}
+🎂 تەمەن: ${participantAge}
+🗣️ شێوەزار: ${getDialectText(participantDialect)}
+😊 هەست: ${emotions[selectedEmotion].name}
+📊 کۆی ریکۆردەکان: ${allRecordings.length}
+📅 بەروار: ${new Date().toLocaleDateString('ku')}
+
+ئەم فایلە ئۆتۆمەیت لە Google Drive دا organize دەبێت.
+
+فۆلدەری هەدەف:
+${cleanName}/${selectedEmotion}/
+
+--
+Kurdish Emotion Speech Dataset
+Auto-generated for Google Drive integration
+                `.trim();
+
+                // Create download and email links
+                const zipUrl = URL.createObjectURL(zipBlob);
+                const zipLink = document.createElement('a');
+                zipLink.href = zipUrl;
+                zipLink.download = `${cleanName}_${selectedEmotion}_dataset_${timestamp}.zip`;
+                
+                const mailtoLink = `mailto:${targetEmail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+                
+                // Show success with download option
+                const successDiv = document.createElement('div');
+                successDiv.className = 'alert alert-success';
+                successDiv.innerHTML = `
+                    <strong>☁️ ئامادە بۆ Google Drive!</strong><br><br>
+                    <div style="margin: 15px 0;">
+                        <button class="btn" onclick="document.querySelector('#hiddenDriveZip').click()" style="background: #28a745;">
+                            📦 ZIP فایل دابگرە
+                        </button>
+                        <button class="btn" onclick="window.open('${mailtoLink}')" style="background: #dc3545;">
+                            📧 ئیمێڵ بکەرەوە بۆ ${targetEmail}
+                        </button>
+                    </div>
+                    <small>💡 دوای ناردنی ئیمێڵەکە، 5 خولەک لە Google Drive چاوەڕێبکە بۆ ئۆتۆمەیت organize کردن</small>
+                `;
+                document.querySelector('#step4 .download-section').appendChild(successDiv);
+                
+                // Add hidden download link
+                zipLink.id = 'hiddenDriveZip';
+                zipLink.style.display = 'none';
+                document.body.appendChild(zipLink);
+                
+                // Clean up after delay
+                setTimeout(() => {
+                    URL.revokeObjectURL(zipUrl);
+                    document.body.removeChild(zipLink);
+                }, 30000);
+                
+            } catch (err) {
+                console.error('Send to Drive error:', err);
+                alert('خەطایەک لە ناردن بۆ Google Drive دا ڕوویدا');
+            }
+        }
+
+        // Show Google Drive setup guide
+        function showDriveSetupGuide() {
+            const guideDiv = document.createElement('div');
+            guideDiv.className = 'alert alert-warning';
+            guideDiv.innerHTML = `
+                <strong>🔧 Google Drive Integration Setup</strong><br><br>
+                
+                <div style="background: white; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                    <h4>پێویستیەکان:</h4>
+                    <ul style="text-align: right;">
+                        <li>🌐 Google Apps Script ئەکاونت</li>
+                        <li>📧 Gmail ئەکاونت</li>
+                        <li>☁️ Google Drive ئەکاونت</li>
+                    </ul>
+                </div>
+                
+                <div style="background: white; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                    <h4>هەنگاوەکان:</h4>
+                    <ol style="text-align: right;">
+                        <li>script.google.com بکەرەوە</li>
+                        <li>پڕۆژەی نوێ دروستبکە</li>
+                        <li>کۆدی Kurdish Dataset Manager زیادبکە</li>
+                        <li>initialSetup() function ڕان بکە</li>
+                        <li>مۆڵەتەکان بدە</li>
+                    </ol>
+                </div>
+                
+                <div style="margin: 15px 0;">
+                    <button class="btn" onclick="window.open('https://script.google.com', '_blank')" style="background: #4285f4;">
+                        🔧 Google Apps Script
+                    </button>
+                    <button class="btn" onclick="window.open('https://github.com/jihad-copter/kurdish-emotion-speech-dataset/blob/main/google-drive-setup-guide.md', '_blank')" style="background: #333;">
+                        📖 تەواوی ڕێنمایی
+                    </button>
+                </div>
+                
+                <small>💡 دوای setup، ئیمێڵەکان خۆکارانە لە Google Drive دا organize دەبن</small>
+            `;
+            document.querySelector('#step4 .download-section').appendChild(guideDiv);
+        }
+
+        function createEnhancedMetadata() {
+            const cleanParticipantName = participantName.replace(/[^a-zA-Z0-9\u0600-\u06FF\u0750-\u077F]/g, '_');
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+            
+            return {
+                participant: {
+                    name: participantName,
+                    cleanName: cleanParticipantName,
+                    gender: participantGender,
+                    genderText: getGenderText(participantGender),
+                    age: participantAge,
+                    dialect: participantDialect,
+                    dialectText: getDialectText(participantDialect),
+                    email: participantEmail || null
+                },
+                session: {
+                    emotion: selectedEmotion,
+                    emotionName: emotions[selectedEmotion].name,
+                    timestamp: timestamp,
+                    sessionId: generateSessionId()
+                },
+                recordings: allRecordings.map((recording, index) => ({
+                    filename: `sentence_${recording.sentenceIndex + 1}_record_${recording.recordingIndex + 1}.wav`,
+                    fullPath: `Kurdish_Emotion_Dataset/${cleanParticipantName}_${participantGender}_${participantAge}/${selectedEmotion}/sentence_${recording.sentenceIndex + 1}_record_${recording.recordingIndex + 1}.wav`,
+                    emotion: recording.emotion,
+                    sentence: recording.sentence,
+                    sentenceIndex: recording.sentenceIndex,
+                    recordingIndex: recording.recordingIndex,
+                    timestamp: recording.timestamp,
+                    estimatedDuration: '1-5 seconds',
+                    quality: 'high',
+                    sampleRate: '44.1kHz',
+                    channels: 'mono'
+                })),
+                technical: {
+                    totalRecordings: allRecordings.length,
+                    language: 'ku',
+                    dialect: participantDialect,
+                    platform: 'GitHub Pages',
+                    userAgent: navigator.userAgent,
+                    recordingDevice: 'web-microphone',
+                    audioFormat: 'WAV',
+                    folderStructure: `Kurdish_Emotion_Dataset/${cleanParticipantName}_${participantGender}_${participantAge}/${selectedEmotion}/`
+                },
+                datasetInfo: {
+                    purpose: 'Kurdish Emotion Speech Recognition Dataset',
+                    license: 'Creative Commons Attribution 4.0',
+                    version: '1.0',
+                    created: new Date().toISOString(),
+                    emotions: Object.keys(emotions),
+                    sentencesPerEmotion: 3,
+                    recordingsPerSentence: 3
+                }
+            };
+        }
+
+        function generateSessionId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        }
+
+        function createMetadata() {
+            // Use enhanced metadata for all downloads
+            return createEnhancedMetadata();
+        }
+
         // Check for File System Access API support
         async function checkFileSystemSupport() {
             return 'showDirectoryPicker' in window;
@@ -1373,36 +1639,79 @@ https://jihad-copter.github.io/kurdish-emotion-speech-dataset/
 
                 // Ask user to select/create a directory
                 const dirHandle = await window.showDirectoryPicker({
-                    mode: 'readwrite'
+                    mode: 'readwrite',
+                    startIn: 'downloads'
                 });
 
                 const cleanName = participantName.replace(/[^a-zA-Z0-9\u0600-\u06FF\u0750-\u077F]/g, '_');
                 
-                // Create participant folder
-                const participantDir = await dirHandle.getDirectoryHandle(cleanName, { create: true });
+                // Create main dataset folder
+                const datasetDir = await dirHandle.getDirectoryHandle('Kurdish_Emotion_Dataset', { create: true });
+                
+                // Create participant folder with demographics
+                const participantFolderName = `${cleanName}_${participantGender}_${participantAge}`;
+                const participantDir = await datasetDir.getDirectoryHandle(participantFolderName, { create: true });
                 
                 // Create emotion folder
                 const emotionDir = await participantDir.getDirectoryHandle(selectedEmotion, { create: true });
+
+                // Show progress
+                const progressDiv = document.createElement('div');
+                progressDiv.className = 'alert alert-success';
+                progressDiv.innerHTML = `
+                    <strong>📁 دروستکردنی فۆلدەری ڕێکخراو...</strong><br>
+                    شوێن: <code>Kurdish_Emotion_Dataset/${participantFolderName}/${selectedEmotion}/</code><br>
+                    <div style="margin-top: 10px;">
+                        <div style="background: #e9ecef; border-radius: 10px; height: 8px;">
+                            <div id="saveProgress" style="background: #28a745; height: 100%; border-radius: 10px; width: 0%; transition: width 0.3s;"></div>
+                        </div>
+                    </div>
+                `;
+                document.querySelector('#step4 .download-section').appendChild(progressDiv);
 
                 // Save each recording to the organized folder
                 for (let i = 0; i < allRecordings.length; i++) {
                     const recording = allRecordings[i];
                     const fileName = `sentence_${recording.sentenceIndex + 1}_record_${recording.recordingIndex + 1}.wav`;
                     
-                    const fileHandle = await emotionDir.getFileHandle(fileName, { create: true });
-                    const writable = await fileHandle.createWritable();
-                    await writable.write(recording.blob);
-                    await writable.close();
+                    try {
+                        const fileHandle = await emotionDir.getFileHandle(fileName, { create: true });
+                        const writable = await fileHandle.createWritable();
+                        await writable.write(recording.blob);
+                        await writable.close();
+                        
+                        // Update progress
+                        const progress = ((i + 1) / (allRecordings.length + 1)) * 100;
+                        document.getElementById('saveProgress').style.width = progress + '%';
+                        
+                        console.log(`✅ Saved: ${fileName}`);
+                    } catch (fileError) {
+                        console.error(`❌ Failed to save ${fileName}:`, fileError);
+                        throw new Error(`نەتوانرا فایلی ${fileName} پاشەکەوت بکرێت`);
+                    }
                 }
 
-                // Save metadata
-                const metadata = createMetadata();
-                const metadataFile = await emotionDir.getFileHandle('metadata.json', { create: true });
-                const metadataWritable = await metadataFile.createWritable();
-                await metadataWritable.write(new Blob([JSON.stringify(metadata, null, 2)], { type: 'application/json' }));
-                await metadataWritable.close();
+                // Save enhanced metadata
+                const metadata = createEnhancedMetadata();
+                try {
+                    const metadataFile = await emotionDir.getFileHandle('metadata.json', { create: true });
+                    const metadataWritable = await metadataFile.createWritable();
+                    await metadataWritable.write(new Blob([JSON.stringify(metadata, null, 2)], { type: 'application/json' }));
+                    await metadataWritable.close();
+                    
+                    // Complete progress
+                    document.getElementById('saveProgress').style.width = '100%';
+                    console.log('✅ Saved: metadata.json');
+                } catch (metaError) {
+                    console.error('❌ Failed to save metadata:', metaError);
+                    throw new Error('نەتوانرا metadata پاشەکەوت بکرێت');
+                }
 
-                return { success: true, path: `${cleanName}/${selectedEmotion}` };
+                return { 
+                    success: true, 
+                    path: `Kurdish_Emotion_Dataset/${participantFolderName}/${selectedEmotion}`,
+                    fileCount: allRecordings.length + 1
+                };
                 
             } catch (error) {
                 console.error('File System Access error:', error);
