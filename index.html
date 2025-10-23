@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="ku" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#667eea">
+    <meta name="description" content="ئەپڵیکەیشنی کۆکردنەوەی داتاسێتی دەنگی هەستەکان بە زمانی کوردی">
+    <meta name="keywords" content="Kurdish, emotion, speech, dataset, AI, machine learning">
+    <meta name="author" content="Kurdish Speech Dataset Project">
+    
+    <title>کۆکردنەوەی داتاسێتی دەنگی هەستەکان - Kurdish Emotion Speech Dataset</title>
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Kurdish Emotion Speech Dataset Collection">
+    <meta property="og:description" content="Help us build a Kurdish emotion speech recognition dataset">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://yourusername.github.io/kurdish-emotion-speech-dataset/">
+    
+    <!-- PWA Support -->
+    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoi2qnbhuqp2LHYr9mG2q/Yp9mI25XbjCDYr9in2KrYp9iz25XYqtuMINiv25XZhtuv24wg2YfYpduM2KfZgtin2YYiLCJzaG9ydF9uYW1lIjoi2YfYpduM2KfZgtin2YYg2K/ZiNmE2KHZhduM2YbYpyIsInN0YXJ0X3VybCI6Ii4iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29sb3IiOiIjNjY3ZWVhIiwidGhlbWVfY29sb3IiOiIjNjY3ZWVhIn0=">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+            direction: rtl;
+            touch-action: manipulation;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            overflow: hidden;
+            min-height: calc(100vh - 20px);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 20px;
+            min-height: 500px;
+        }
+
+        .step {
+            display: none;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-group {
+            margin-bottom: 30px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #333;
+            font-size: 1.1rem;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+            text-align: right;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 10px rgba(79, 172, 254, 0.2);
+        }
+
+        .emotion-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .emotion-card {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            touch-action: manipulation;
+        }
+
+        .emotion-card:hover, .emotion-card:active {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+
+        .emotion-card.selected {
+            background: #4facfe;
+            color: white;
+            border-color: #4facfe;
+        }
+
+        .emotion-emoji {
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .emotion-card h3 {
+            font-size: 0.9rem;
+        }
+
+        .sentence-display {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 1.2rem;
+            line-height: 1.6;
+            color: #333;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .recording-controls {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .record-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 70px;
+            height: 70px;
+            font-size: 1.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0 10px;
+            touch-action: manipulation;
+        }
+
+        .record-btn:hover, .record-btn:active {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4);
+        }
+
+        .record-btn.recording {
+            background: #28a745;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 8px;
+            touch-action: manipulation;
+            min-width: 120px;
+        }
+
+        .btn:hover, .btn:active {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+            opacity: 0.6;
+        }
+
+        .progress-bar {
+            background: #e9ecef;
+            border-radius: 10px;
+            height: 6px;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .recording-status {
+            text-align: center;
+            margin: 15px 0;
+            font-size: 1rem;
+            color: #666;
+        }
+
+        .timer {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #dc3545;
+            margin: 10px 0;
+        }
+
+        .recordings-list {
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .recording-item {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .download-section {
+            margin-top: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .alert {
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .instructions {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 25px;
+            color: #1565c0;
+            font-size: 0.9rem;
+        }
+
+        .next-sentence-btn {
+            background: #28a745;
+        }
+
+        .github-info {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .github-info a {
+            color: #4facfe;
+            text-decoration: none;
+        }
+
+        .github-info a:hover {
+            text-decoration: underline;
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .container {
+                margin: 5px;
+                border-radius: 15px;
+                min-height: calc(100vh - 10px);
+            }
+            
+            .header {
+                padding: 15px;
+            }
+            
+            .header h1 {
+                font-size: 1.3rem;
+            }
+            
+            .content {
+                padding: 15px;
+            }
+            
+            .emotion-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+            
+            .emotion-card {
+                padding: 10px;
+            }
+            
+            .emotion-emoji {
+                font-size: 2rem;
+            }
+            
+            .emotion-card h3 {
+                font-size: 0.8rem;
+            }
+            
+            .sentence-display {
+                padding: 20px;
+                font-size: 1.1rem;
+                min-height: 70px;
+            }
+            
+            .record-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 1.5rem;
+            }
+            
+            .btn {
+                padding: 10px 20px;
+                font-size: 0.85rem;
+                margin: 5px;
+                min-width: 100px;
+            }
+        }
+
+        /* Very small screens */
+        @media (max-width: 480px) {
+            .emotion-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .recording-item {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+        }
+
+        /* GitHub Pages specific styles */
+        .github-banner {
+            background: linear-gradient(135deg, #24292e 0%, #2f363d 100%);
+            color: white;
+            padding: 10px 0;
+            text-align: center;
+            font-size: 0.8rem;
+        }
+
+        .github-banner a {
+            color: #58a6ff;
+            text-decoration: none;
+        }
+
+        .github-banner a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <!-- GitHub Pages Banner -->
+    <div class="github-banner">
+        🚀 پڕۆژەی بەخۆڕایی لەسەر GitHub Pages | 
+        <a href="https://github.com/yourusername/kurdish-emotion-speech-dataset" target="_blank">
+            کۆدی سەرچاوە لە GitHub 
+        </a>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>کۆکردنەوەی داتاسێتی دەنگی هەستەکان</h1>
+            <p>یارمەتیمان بدە بۆ دروستکردنی داتاسێتێکی باش بۆ ناسینەوەی هەستەکان لە دەنگدا</p>
+        </div>
+
+        <div class="content">
+            <!-- GitHub Pages Info -->
+            <div class="github-info">
+                <strong>✅ ئەم ئەپڵیکەیشنە لە GitHub Pages هۆست کراوە!</strong><br>
+                مایکڕۆفۆن بە تەواوی لە مۆبایل و دێسکتۆپ کاردەکات بەهۆی HTTPS پشتگیری.
+            </div>
+
+            <!-- Step 1: User Info -->
+            <div class="step active" id="step1">
+                <h2 style="margin-bottom: 20px;">زانیاری کەسی</h2>
+                <div class="form-group">
+                    <label for="participantName">ناوی سیانی:</label>
+                    <input type="text" id="participantName" placeholder="تکایە ناوی سیانیت بنووسە">
+                </div>
+                <button class="btn" onclick="nextStep()">دەست پێکردن</button>
+            </div>
+
+            <!-- Step 2: Emotion Selection -->
+            <div class="step" id="step2">
+                <h2 style="margin-bottom: 20px;">هەڵبژاردنی هەست</h2>
+                <div class="emotion-grid">
+                    <div class="emotion-card" onclick="selectEmotion('happy')" data-emotion="happy">
+                        <span class="emotion-emoji">😊</span>
+                        <h3>دڵخۆشی و خۆشحاڵی</h3>
+                    </div>
+                    <div class="emotion-card" onclick="selectEmotion('sad')" data-emotion="sad">
+                        <span class="emotion-emoji">😢</span>
+                        <h3>خەمۆکی</h3>
+                    </div>
+                    <div class="emotion-card" onclick="selectEmotion('angry')" data-emotion="angry">
+                        <span class="emotion-emoji">😠</span>
+                        <h3>تووڕەیی</h3>
+                    </div>
+                    <div class="emotion-card" onclick="selectEmotion('neutral')" data-emotion="neutral">
+                        <span class="emotion-emoji">😐</span>
+                        <h3>هاوسەنگ</h3>
+                    </div>
+                    <div class="emotion-card" onclick="selectEmotion('fear')" data-emotion="fear">
+                        <span class="emotion-emoji">😨</span>
+                        <h3>ترس</h3>
+                    </div>
+                    <div class="emotion-card" onclick="selectEmotion('surprise')" data-emotion="surprise">
+                        <span class="emotion-emoji">😲</span>
+                        <h3>سەرسوڕمان</h3>
+                    </div>
+                    <div class="emotion-card" onclick="selectEmotion('disgust')" data-emotion="disgust">
+                        <span class="emotion-emoji">🤢</span>
+                        <h3>بێزاری</h3>
+                    </div>
+                </div>
+                <button class="btn" onclick="startRecording()" id="startRecordingBtn" disabled>دەست پێکردنی ریکۆرد</button>
+            </div>
+
+            <!-- Step 3: Recording -->
+            <div class="step" id="step3">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                
+                <h2 id="currentEmotionTitle" style="margin-bottom: 20px; text-align: center;"></h2>
+                
+                <div class="instructions">
+                    <p><strong>ڕێنمایی:</strong> تکایە ئەم رستەیە بە شێوەیەک بخوێنەوە کە هەستەکە بە ڕاستی دەربڕێت. هەر رستەیەک ٣ جار دووبارە بکەرەوە.</p>
+                </div>
+
+                <div class="sentence-display" id="sentenceDisplay">
+                    ئامادەی بۆ ریکۆرد...
+                </div>
+
+                <div class="recording-status">
+                    <div>ریکۆردی ژمارە: <span id="currentRecording">1</span> لە <span id="totalRecordings">3</span></div>
+                    <div class="timer" id="timer">00:00</div>
+                </div>
+
+                <div class="recording-controls">
+                    <button class="record-btn" id="recordBtn" onclick="toggleRecording()">🎤</button>
+                    <br><br>
+                    <button class="btn" onclick="playLastRecording()" id="playBtn" disabled>گوێگرتن</button>
+                    <button class="btn next-sentence-btn" onclick="nextRecording()" id="nextBtn" disabled>ریکۆردی داهاتوو</button>
+                </div>
+
+                <div class="recordings-list" id="recordingsList"></div>
+
+                <div style="text-align: center; margin-top: 30px;">
+                    <button class="btn" onclick="goToEmotionSelection()">گەڕانەوە بۆ هەڵبژاردنی هەست</button>
+                    <button class="btn" onclick="finishSession()" id="finishBtn" disabled>تەواوکردنی سیشن</button>
+                </div>
+            </div>
+
+            <!-- Step 4: Download -->
+            <div class="step" id="step4">
+                <h2 style="margin-bottom: 20px; text-align: center;">تەواو بوو!</h2>
+                
+                <div class="alert alert-success">
+                    <strong>زۆر سوپاس!</strong> تۆ بە سەرکەوتووی <span id="totalRecordingsCount">0</span> ریکۆردت تەواو کرد.
+                </div>
+
+                <div class="download-section">
+                    <h3>داگرتنی داتاکان</h3>
+                    <p>داتاکانت ئامادەن بۆ داگرتن</p>
+                    <button class="btn" onclick="downloadData()">داگرتنی هەموو داتاکان</button>
+                    <button class="btn" onclick="startNewSession()">دەست پێکردنەوە</button>
+                </div>
+
+                <div class="github-info" style="margin-top: 20px;">
+                    <p><strong>🙏 سوپاس بۆ هاوکاریکردنت!</strong></p>
+                    <p>ئەم داتایانە یارمەتیدەدەن بۆ باشترکردنی تەکنەلۆژیای ناسینەوەی دەنگی کوردی.</p>
+                    <p>
+                        <a href="https://github.com/yourusername/kurdish-emotion-speech-dataset" target="_blank">
+                            پڕۆژەکە لە GitHub بینین
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data structures
+        const emotions = {
+            happy: {
+                name: 'دڵخۆشی و خۆشحاڵی',
+                sentences: [
+                    'ڕۆژێکی زۆر زۆر خۆشحاڵە!',
+                    'ڕۆژی دڵخۆش و هاوسەرگیریم هاتووە',
+                    'ڕاحاتم'
+                ]
+            },
+            sad: {
+                name: 'خەمۆکی',
+                sentences: [
+                    'هەست بە خەمۆکی دەکەم',
+                    'ڕۆژێکی ئاحوساز بوو',
+                    'دڵم دەکەوێت'
+                ]
+            },
+            angry: {
+                name: 'تووڕەیی',
+                sentences: [
+                    'ئەمە کاری ڕەوا نییە!',
+                    'زۆر تووڕەم',
+                    'بەسە ئەم شتە!'
+                ]
+            },
+            neutral: {
+                name: 'هاوسەنگ',
+                sentences: [
+                    'سڵاو، چۆنیت؟',
+                    'ئەمە کارێکی ئاسایە',
+                    'کەسایەتیە ئاساییەکان'
+                ]
+            },
+            fear: {
+                name: 'ترس',
+                sentences: [
+                    'ناو خوای، زۆر دەترسم!',
+                    'ئایا ڕوودەدات؟',
+                    'کاکە ئەم کارە دەدەم'
+                ]
+            },
+            surprise: {
+                name: 'سەرسوڕمان',
+                sentences: [
+                    'نەوەک، ئەرەسیت؟',
+                    'واکەم ئەکا!',
+                    'ئایا؟'
+                ]
+            },
+            disgust: {
+                name: 'بێزاری',
+                sentences: [
+                    'ئەمە زۆر ئاحوساز نییە',
+                    'ئەوەڕۆ',
+                    'ئەموومەتەوە'
+                ]
+            }
+        };
+
+        // Global variables
+        let currentStep = 1;
+        let participantName = '';
+        let selectedEmotion = '';
+        let currentSentenceIndex = 0;
+        let currentRecordingIndex = 0;
+        let isRecording = false;
+        let mediaRecorder = null;
+        let audioStream = null;
+        let recordedChunks = [];
+        let allRecordings = [];
+        let recordingStartTime = 0;
+        let timerInterval = null;
+        let audioContext = null;
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            updateProgressBar();
+            // GitHub Pages automatically provides HTTPS, so no need for browser support check
+            console.log('Kurdish Emotion Speech Dataset App - Running on GitHub Pages with HTTPS');
+        });
+
+        function nextStep() {
+            const nameInput = document.getElementById('participantName');
+            if (currentStep === 1) {
+                if (!nameInput.value.trim()) {
+                    alert('تکایە ناوی سیانیت بنووسە');
+                    return;
+                }
+                participantName = nameInput.value.trim();
+            }
+
+            // Hide current step
+            document.getElementById(`step${currentStep}`).classList.remove('active');
+            
+            // Show next step
+            currentStep++;
+            document.getElementById(`step${currentStep}`).classList.add('active');
+            
+            updateProgressBar();
+        }
+
+        function updateProgressBar() {
+            const progress = ((currentStep - 1) / 3) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+
+        function selectEmotion(emotion) {
+            // Remove previous selection
+            document.querySelectorAll('.emotion-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+
+            // Select current emotion
+            document.querySelector(`[data-emotion="${emotion}"]`).classList.add('selected');
+            selectedEmotion = emotion;
+            
+            // Enable start recording button
+            document.getElementById('startRecordingBtn').disabled = false;
+        }
+
+        async function startRecording() {
+            if (!selectedEmotion) {
+                alert('تکایە هەستێک هەڵبژێرە');
+                return;
+            }
+
+            try {
+                // Request microphone access with optimized settings for GitHub Pages
+                const constraints = {
+                    audio: {
+                        sampleRate: 44100,
+                        channelCount: 1,
+                        volume: 1.0,
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                };
+
+                audioStream = await navigator.mediaDevices.getUserMedia(constraints);
+                
+                // Go to recording step
+                document.getElementById('step2').classList.remove('active');
+                document.getElementById('step3').classList.add('active');
+                currentStep = 3;
+                updateProgressBar();
+
+                // Setup recording session
+                setupRecordingSession();
+                
+            } catch (err) {
+                console.error('Error accessing microphone:', err);
+                
+                let errorMessage = 'نەتوانرا دەسەڵاتی مایکڕۆفۆن وەربگیرێت.';
+                
+                if (err.name === 'NotAllowedError') {
+                    errorMessage += '\n\nتکایە مۆڵەتی مایکڕۆفۆن بدە کاتێک داوا دەکرێت.';
+                } else if (err.name === 'NotFoundError') {
+                    errorMessage += '\n\nمایکڕۆفۆن نەدۆزرایەوە. تکایە دڵنیابە کە مایکڕۆفۆنێک بەستراوە.';
+                } else if (err.name === 'NotSupportedError') {
+                    errorMessage += '\n\nبڕاوزەرەکەت پشتگیری مایکڕۆفۆن ناکات.';
+                }
+                
+                alert(errorMessage);
+            }
+        }
+
+        function setupRecordingSession() {
+            currentSentenceIndex = 0;
+            currentRecordingIndex = 0;
+            allRecordings = [];
+            
+            // Update UI
+            document.getElementById('currentEmotionTitle').textContent = 
+                `ریکۆردی هەستی: ${emotions[selectedEmotion].name}`;
+            
+            displayCurrentSentence();
+            updateRecordingStatus();
+        }
+
+        function displayCurrentSentence() {
+            const sentences = emotions[selectedEmotion].sentences;
+            const currentSentence = sentences[currentSentenceIndex];
+            document.getElementById('sentenceDisplay').textContent = currentSentence;
+        }
+
+        function updateRecordingStatus() {
+            const totalRecordings = emotions[selectedEmotion].sentences.length * 3;
+            const currentRecording = (currentSentenceIndex * 3) + currentRecordingIndex + 1;
+            
+            document.getElementById('currentRecording').textContent = currentRecording;
+            document.getElementById('totalRecordings').textContent = totalRecordings;
+            
+            // Check if session is complete
+            if (currentRecording > totalRecordings) {
+                document.getElementById('finishBtn').disabled = false;
+            }
+        }
+
+        async function toggleRecording() {
+            if (!isRecording) {
+                await startRecordingAudio();
+            } else {
+                stopRecordingAudio();
+            }
+        }
+
+        async function startRecordingAudio() {
+            if (!audioStream) {
+                alert('مایکڕۆفۆن ئامادە نییە. تکایە دووبارە هەوڵبدەوە.');
+                return;
+            }
+
+            try {
+                recordedChunks = [];
+                
+                // Create MediaRecorder with better browser support
+                let options = { mimeType: 'audio/webm; codecs=opus' };
+                if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                    options = { mimeType: 'audio/webm' };
+                    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                        options = { mimeType: 'audio/mp4' };
+                        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                            options = {};
+                        }
+                    }
+                }
+                
+                mediaRecorder = new MediaRecorder(audioStream, options);
+                
+                mediaRecorder.ondataavailable = function(event) {
+                    if (event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = function() {
+                    const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'audio/wav' });
+                    saveRecording(blob);
+                };
+
+                mediaRecorder.start(100); // Collect data every 100ms
+                isRecording = true;
+                recordingStartTime = Date.now();
+                
+                // Update UI
+                const recordBtn = document.getElementById('recordBtn');
+                recordBtn.classList.add('recording');
+                recordBtn.textContent = '⏹️';
+                
+                // Start timer
+                startTimer();
+                
+                // Auto-stop after 5 seconds
+                setTimeout(() => {
+                    if (isRecording) {
+                        stopRecordingAudio();
+                    }
+                }, 5000);
+                
+            } catch (err) {
+                console.error('Recording error:', err);
+                alert('خەطایەک لە ریکۆردکردندا ڕوویدا: ' + err.message);
+            }
+        }
+
+        function stopRecordingAudio() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+                
+                // Update UI
+                const recordBtn = document.getElementById('recordBtn');
+                recordBtn.classList.remove('recording');
+                recordBtn.textContent = '🎤';
+                
+                // Stop timer
+                stopTimer();
+                
+                // Enable buttons
+                document.getElementById('playBtn').disabled = false;
+                document.getElementById('nextBtn').disabled = false;
+            }
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                const elapsed = Date.now() - recordingStartTime;
+                const seconds = Math.floor(elapsed / 1000);
+                const milliseconds = Math.floor((elapsed % 1000) / 10);
+                
+                document.getElementById('timer').textContent = 
+                    `${seconds.toString().padStart(2, '0')}:${milliseconds.toString().padStart(2, '0')}`;
+            }, 10);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function saveRecording(blob) {
+            const recording = {
+                emotion: selectedEmotion,
+                sentence: emotions[selectedEmotion].sentences[currentSentenceIndex],
+                sentenceIndex: currentSentenceIndex,
+                recordingIndex: currentRecordingIndex,
+                blob: blob,
+                timestamp: new Date().toISOString(),
+                participant: participantName
+            };
+            
+            allRecordings.push(recording);
+            
+            // Add to UI
+            addRecordingToList(recording);
+        }
+
+        function addRecordingToList(recording) {
+            const recordingsList = document.getElementById('recordingsList');
+            const recordingItem = document.createElement('div');
+            recordingItem.className = 'recording-item';
+            recordingItem.innerHTML = `
+                <div>
+                    <strong>${recording.sentence}</strong><br>
+                    ریکۆردی ${currentRecordingIndex + 1} - ${new Date(recording.timestamp).toLocaleTimeString('ku')}
+                </div>
+                <button class="btn" onclick="playRecording(${allRecordings.length - 1})" style="margin: 0;">گوێگرتن</button>
+            `;
+            recordingsList.appendChild(recordingItem);
+        }
+
+        function playRecording(index) {
+            try {
+                const recording = allRecordings[index];
+                const audioUrl = URL.createObjectURL(recording.blob);
+                const audio = new Audio(audioUrl);
+                
+                audio.onended = () => {
+                    URL.revokeObjectURL(audioUrl);
+                };
+                
+                audio.play().catch(err => {
+                    console.error('Error playing audio:', err);
+                    alert('خەطایەک لە لێدانی دەنگدا ڕوویدا');
+                });
+            } catch (err) {
+                console.error('Error playing recording:', err);
+                alert('نەتوانرا دەنگەکە لێبدرێت');
+            }
+        }
+
+        function playLastRecording() {
+            if (allRecordings.length > 0) {
+                playRecording(allRecordings.length - 1);
+            }
+        }
+
+        function nextRecording() {
+            currentRecordingIndex++;
+            
+            // Check if we need to move to next sentence
+            if (currentRecordingIndex >= 3) {
+                currentRecordingIndex = 0;
+                currentSentenceIndex++;
+                
+                // Check if we've finished all sentences
+                if (currentSentenceIndex >= emotions[selectedEmotion].sentences.length) {
+                    // Session complete
+                    document.getElementById('finishBtn').disabled = false;
+                    alert('تەواو بوو! هەموو ریکۆردەکان تەممکردن.');
+                    return;
+                }
+                
+                displayCurrentSentence();
+            }
+            
+            updateRecordingStatus();
+            
+            // Reset buttons
+            document.getElementById('playBtn').disabled = true;
+            document.getElementById('nextBtn').disabled = true;
+            document.getElementById('timer').textContent = '00:00';
+        }
+
+        function goToEmotionSelection() {
+            // Stop any ongoing recording
+            if (isRecording) {
+                stopRecordingAudio();
+            }
+            
+            // Reset recording session
+            currentSentenceIndex = 0;
+            currentRecordingIndex = 0;
+            
+            // Go back to emotion selection
+            document.getElementById('step3').classList.remove('active');
+            document.getElementById('step2').classList.add('active');
+            currentStep = 2;
+            updateProgressBar();
+        }
+
+        function finishSession() {
+            // Stop any ongoing recording
+            if (isRecording) {
+                stopRecordingAudio();
+            }
+            
+            // Stop audio stream
+            if (audioStream) {
+                audioStream.getTracks().forEach(track => track.stop());
+            }
+            
+            // Go to download step
+            document.getElementById('step3').classList.remove('active');
+            document.getElementById('step4').classList.add('active');
+            currentStep = 4;
+            updateProgressBar();
+            
+            // Update total recordings count
+            document.getElementById('totalRecordingsCount').textContent = allRecordings.length;
+        }
+
+        function downloadData() {
+            try {
+                // Create a zip-like structure for download
+                const dataToDownload = {
+                    participant: participantName,
+                    emotion: selectedEmotion,
+                    recordings: [],
+                    metadata: {
+                        totalRecordings: allRecordings.length,
+                        timestamp: new Date().toISOString(),
+                        language: 'ku',
+                        userAgent: navigator.userAgent,
+                        platform: 'GitHub Pages'
+                    }
+                };
+                
+                // Download each audio file
+                allRecordings.forEach((recording, index) => {
+                    try {
+                        // Download audio file
+                        const audioUrl = URL.createObjectURL(recording.blob);
+                        const link = document.createElement('a');
+                        link.href = audioUrl;
+                        link.download = `${participantName}_${recording.emotion}_sentence${recording.sentenceIndex}_record${recording.recordingIndex}.wav`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        // Clean up URL
+                        setTimeout(() => URL.revokeObjectURL(audioUrl), 1000);
+                        
+                        // Add metadata
+                        dataToDownload.recordings.push({
+                            filename: link.download,
+                            emotion: recording.emotion,
+                            sentence: recording.sentence,
+                            sentenceIndex: recording.sentenceIndex,
+                            recordingIndex: recording.recordingIndex,
+                            timestamp: recording.timestamp
+                        });
+                    } catch (err) {
+                        console.error('Error downloading file:', err);
+                    }
+                });
+                
+                // Download metadata JSON
+                const jsonData = JSON.stringify(dataToDownload, null, 2);
+                const jsonBlob = new Blob([jsonData], { type: 'application/json' });
+                const jsonUrl = URL.createObjectURL(jsonBlob);
+                const jsonLink = document.createElement('a');
+                jsonLink.href = jsonUrl;
+                jsonLink.download = `${participantName}_${selectedEmotion}_metadata.json`;
+                document.body.appendChild(jsonLink);
+                jsonLink.click();
+                document.body.removeChild(jsonLink);
+                
+                // Clean up URL
+                setTimeout(() => URL.revokeObjectURL(jsonUrl), 1000);
+                
+            } catch (err) {
+                console.error('Error downloading data:', err);
+                alert('خەطایەک لە داگرتنی داتاکاندا ڕوویدا');
+            }
+        }
+
+        function startNewSession() {
+            // Reset all variables
+            currentStep = 1;
+            participantName = '';
+            selectedEmotion = '';
+            currentSentenceIndex = 0;
+            currentRecordingIndex = 0;
+            allRecordings = [];
+            
+            // Reset UI
+            document.getElementById('step4').classList.remove('active');
+            document.getElementById('step1').classList.add('active');
+            document.getElementById('participantName').value = '';
+            document.querySelectorAll('.emotion-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            document.getElementById('startRecordingBtn').disabled = true;
+            document.getElementById('recordingsList').innerHTML = '';
+            
+            updateProgressBar();
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(event) {
+            if (currentStep === 3) {
+                if (event.code === 'Space') {
+                    event.preventDefault();
+                    toggleRecording();
+                }
+            }
+        });
+
+        // Handle page visibility changes (mobile optimization)
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden && isRecording) {
+                // Stop recording if page becomes hidden
+                stopRecordingAudio();
+            }
+        });
+
+        // GitHub Pages analytics (optional)
+        console.log('Kurdish Emotion Speech Dataset - GitHub Pages Version');
+    </script>
+</body>
+</html>
