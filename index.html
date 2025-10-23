@@ -651,6 +651,12 @@
                     <div class="timer" id="timer">00:00</div>
                 </div>
 
+                <!-- Session Progress Indicator -->
+                <div id="sessionProgress" class="alert alert-info" style="margin: 15px 0; padding: 10px; font-size: 0.9rem; display: none;">
+                    <strong>📊 پێشکەوتنی سیشن:</strong>
+                    <div id="sessionProgressContent" style="margin-top: 5px;"></div>
+                </div>
+
                 <div class="recording-controls">
                     <button class="record-btn" id="recordBtn" onclick="toggleRecording()">🎤</button>
                     <br><br>
@@ -932,16 +938,24 @@
             // Select current emotion
             document.querySelector(`[data-emotion="${emotion}"]`).classList.add('selected');
             
-            // If we're in recording mode (step 3), setup the recording session
+            // If we're in recording mode (step 3), handle emotion switching
             if (currentStep === 3) {
-                // Store current emotion recordings before switching
+                debugRecordingsState("BEFORE EMOTION SWITCH");
+                
+                // Store current emotion recordings before switching (using OLD selectedEmotion)
                 if (selectedEmotion && allRecordings.length > 0) {
                     allEmotionRecordings[selectedEmotion] = [...allRecordings];
-                    console.log(`✅ Stored ${allRecordings.length} recordings for emotion: ${selectedEmotion}`);
+                    console.log(`✅ Stored ${allRecordings.length} recordings for OLD emotion: ${selectedEmotion}`);
                 }
                 
+                // NOW change to new emotion
                 selectedEmotion = emotion;
+                console.log(`🔄 Switching to NEW emotion: ${selectedEmotion}`);
+                
+                // Setup recording session for new emotion
                 setupRecordingSession();
+                
+                debugRecordingsState("AFTER EMOTION SWITCH");
             } else {
                 // Just set the emotion for later use
                 selectedEmotion = emotion;
@@ -999,17 +1013,12 @@
         }
 
         function setupRecordingSession() {
-            // Store current emotion recordings before switching
-            if (selectedEmotion && allRecordings.length > 0) {
-                allEmotionRecordings[selectedEmotion] = [...allRecordings];
-                console.log(`✅ Stored ${allRecordings.length} recordings for emotion: ${selectedEmotion}`);
-            }
-            
             currentSentenceIndex = 0;
             currentRecordingIndex = 0;
             
             // Load existing recordings for this emotion or start fresh
             allRecordings = allEmotionRecordings[selectedEmotion] || [];
+            console.log(`📂 Loaded ${allRecordings.length} existing recordings for emotion: ${selectedEmotion}`);
             
             // Update UI
             document.getElementById('currentEmotionTitle').textContent = 
@@ -1024,6 +1033,81 @@
             
             displayCurrentSentence();
             updateRecordingStatus();
+            
+            // Update session progress indicator
+            updateSessionProgress();
+        }
+
+        function debugRecordingsState(action = "DEBUG") {
+            console.log(`\n🔍 ${action} - Current Recordings State:`);
+            console.log(`📍 Current selectedEmotion: ${selectedEmotion}`);
+            console.log(`📍 Current allRecordings.length: ${allRecordings.length}`);
+            console.log(`📍 allEmotionRecordings contents:`);
+            
+            for (const emotion in allEmotionRecordings) {
+                const recordings = allEmotionRecordings[emotion];
+                console.log(`   ${emotion}: ${recordings ? recordings.length : 0} recordings`);
+                if (recordings && recordings.length > 0) {
+                    recordings.forEach((rec, idx) => {
+                        console.log(`     ${idx + 1}. sentence_${rec.sentenceIndex + 1}_record_${rec.recordingIndex + 1} (${rec.emotion})`);
+                    });
+                }
+            }
+            
+            let totalRecordings = 0;
+            Object.values(allEmotionRecordings).forEach(recordings => {
+                if (recordings) totalRecordings += recordings.length;
+            });
+            console.log(`📊 Total stored recordings: ${totalRecordings}`);
+            console.log(`\n`);
+        }
+
+        function updateSessionProgress() {
+            const sessionProgress = document.getElementById('sessionProgress');
+            const sessionProgressContent = document.getElementById('sessionProgressContent');
+            
+            // Store current recordings first
+            if (selectedEmotion && allRecordings.length > 0) {
+                allEmotionRecordings[selectedEmotion] = [...allRecordings];
+            }
+            
+            let totalRecordings = 0;
+            let emotionsSummary = [];
+            
+            for (const emotion in allEmotionRecordings) {
+                const recordings = allEmotionRecordings[emotion];
+                if (recordings && recordings.length > 0) {
+                    totalRecordings += recordings.length;
+                    emotionsSummary.push(`${emotions[emotion].name}: ${recordings.length}`);
+                }
+            }
+            
+            // Add current emotion if not stored yet
+            if (selectedEmotion && allRecordings.length > 0 && 
+                (!allEmotionRecordings[selectedEmotion] || 
+                 allEmotionRecordings[selectedEmotion].length !== allRecordings.length)) {
+                // Update the display with current recordings
+                const currentEmotionIndex = emotionsSummary.findIndex(item => item.startsWith(emotions[selectedEmotion].name));
+                if (currentEmotionIndex >= 0) {
+                    emotionsSummary[currentEmotionIndex] = `${emotions[selectedEmotion].name}: ${allRecordings.length}`;
+                    totalRecordings = totalRecordings - allEmotionRecordings[selectedEmotion].length + allRecordings.length;
+                } else {
+                    emotionsSummary.push(`${emotions[selectedEmotion].name}: ${allRecordings.length}`);
+                    totalRecordings += allRecordings.length;
+                }
+            }
+            
+            if (totalRecordings > 0) {
+                sessionProgressContent.innerHTML = `
+                    <div style="color: #28a745; font-weight: bold;">کۆی گشتی: ${totalRecordings} ریکۆرد</div>
+                    <div style="margin-top: 5px; color: #495057;">
+                        ${emotionsSummary.join(' • ')}
+                    </div>
+                `;
+                sessionProgress.style.display = 'block';
+            } else {
+                sessionProgress.style.display = 'none';
+            }
         }
 
         function getEmotionColor(emotion) {
@@ -1199,6 +1283,9 @@
             
             // Add to UI
             addRecordingToList(recording);
+            
+            // Update session progress
+            updateSessionProgress();
         }
 
         function addRecordingToList(recording) {
@@ -1301,6 +1388,8 @@
                 allEmotionRecordings[selectedEmotion] = [...allRecordings];
                 addToRecordedEmotions(selectedEmotion);
             }
+            
+            debugRecordingsState("BEFORE FINISH SESSION");
             
             // Calculate total recordings across all emotions
             let totalRecordings = 0;
@@ -2044,6 +2133,8 @@ Auto-generated for Google Drive integration
                 if (selectedEmotion && allRecordings.length > 0) {
                     allEmotionRecordings[selectedEmotion] = [...allRecordings];
                 }
+                
+                debugRecordingsState("BEFORE ZIP CREATION");
                 
                 if (typeof JSZip === 'undefined') {
                     throw new Error('JSZip library not loaded');
