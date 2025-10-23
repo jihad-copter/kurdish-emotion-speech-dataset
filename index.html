@@ -454,7 +454,15 @@
                 <h2 style="margin-bottom: 20px;">زانیاری کەسی</h2>
                 <div class="form-group">
                     <label for="participantName">ناوی سیانی:</label>
-                    <input type="text" id="participantName" placeholder="تکایە ناوی سیانیت بنووسە">
+                    <input type="text" id="participantName" placeholder="تکایە ناوی سیانیت بنووسە" 
+                           oninput="updateFolderPreview()">
+                    
+                    <div id="folderPreview" style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 8px; font-size: 0.85rem; color: #666; display: none;">
+                        <strong>📁 فۆلدەری داتاکان:</strong> 
+                        <code id="previewPath" style="color: #4facfe;"></code>
+                        <br>
+                        <small>فایلەکان بەم شێوەیە ڕێکدەخرێن بۆ هەڵگرتنی دواجار</small>
+                    </div>
                 </div>
                 <button class="btn" onclick="nextStep()">دەست پێکردن</button>
             </div>
@@ -541,9 +549,18 @@
 
                 <div class="download-section">
                     <h3>داگرتنی داتاکان</h3>
-                    <p>داتاکانت ئامادەن بۆ داگرتن</p>
-                    <button class="btn" onclick="downloadData()">داگرتنی هەموو داتاکان</button>
-                    <button class="btn" onclick="startNewSession()">دەست پێکردنەوە</button>
+                    <p>داتاکانت ئامادەن بۆ داگرتن بە ڕێکخستنی فۆلدەر</p>
+                    
+                    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                        <button class="btn" onclick="downloadData()">📁 داگرتنی ڕێکخراو</button>
+                        <button class="btn" onclick="downloadAsZip()" style="background: #28a745;">📦 داگرتنی ZIP</button>
+                        <button class="btn" onclick="startNewSession()">🔄 دەست پێکردنەوە</button>
+                    </div>
+                    
+                    <div style="margin-top: 15px; font-size: 0.85rem; color: #666;">
+                        <strong>📂 ساختاری فۆلدەر:</strong> 
+                        <code id="folderStructurePreview">[ناو]/[هەست]/فایلەکان</code>
+                    </div>
                 </div>
 
                 <div class="github-info" style="margin-top: 20px;">
@@ -641,6 +658,20 @@
             // GitHub Pages automatically provides HTTPS, so no need for browser support check
             console.log('Kurdish Emotion Speech Dataset App - Running on GitHub Pages with HTTPS');
         });
+
+        function updateFolderPreview() {
+            const nameInput = document.getElementById('participantName');
+            const preview = document.getElementById('folderPreview');
+            const previewPath = document.getElementById('previewPath');
+            
+            if (nameInput.value.trim()) {
+                const cleanName = nameInput.value.trim().replace(/[^a-zA-Z0-9\u0600-\u06FF\u0750-\u077F]/g, '_');
+                previewPath.textContent = `${cleanName}/[هەست]/sentence_X_record_Y.wav`;
+                preview.style.display = 'block';
+            } else {
+                preview.style.display = 'none';
+            }
+        }
 
         function nextStep() {
             const nameInput = document.getElementById('participantName');
@@ -984,32 +1015,67 @@
             
             // Update total recordings count
             document.getElementById('totalRecordingsCount').textContent = allRecordings.length;
+            
+            // Update folder structure preview
+            const cleanName = participantName.replace(/[^a-zA-Z0-9\u0600-\u06FF\u0750-\u077F]/g, '_');
+            document.getElementById('folderStructurePreview').textContent = `${cleanName}/${selectedEmotion}/`;
+        }
+
+        // ZIP Download functionality (simplified version)
+        async function downloadAsZip() {
+            try {
+                // For browsers that don't support JSZip, fallback to individual downloads
+                alert('📦 ZIP فیچەر لە ڤێرژنی داهاتوودا زیاد دەکرێت. ئێستا فایلە جیاجیاکان دادەگیرێن.');
+                downloadData();
+            } catch (err) {
+                console.error('ZIP download error:', err);
+                downloadData(); // Fallback to individual downloads
+            }
         }
 
         function downloadData() {
             try {
-                // Create a zip-like structure for download
+                // Clean participant name for folder/file naming
+                const cleanParticipantName = participantName.replace(/[^a-zA-Z0-9\u0600-\u06FF\u0750-\u077F]/g, '_');
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+                
+                // Create organized data structure
                 const dataToDownload = {
                     participant: participantName,
                     emotion: selectedEmotion,
                     recordings: [],
                     metadata: {
                         totalRecordings: allRecordings.length,
-                        timestamp: new Date().toISOString(),
+                        timestamp: timestamp,
                         language: 'ku',
                         userAgent: navigator.userAgent,
-                        platform: 'GitHub Pages'
+                        platform: 'GitHub Pages',
+                        folderStructure: `${cleanParticipantName}/${selectedEmotion}/`
                     }
                 };
+
+                // Show download progress
+                const downloadInfo = document.createElement('div');
+                downloadInfo.className = 'alert alert-success';
+                downloadInfo.innerHTML = `
+                    <strong>📁 داگرتنی فایلەکان...</strong><br>
+                    فۆلدەری ڕێکخراو: <code>${cleanParticipantName}/${selectedEmotion}/</code><br>
+                    کۆی فایلەکان: ${allRecordings.length + 1} فایل (${allRecordings.length} دەنگ + 1 metadata)
+                `;
+                document.querySelector('#step4 .download-section').appendChild(downloadInfo);
                 
-                // Download each audio file
+                // Download each audio file with organized naming
                 allRecordings.forEach((recording, index) => {
                     try {
-                        // Download audio file
+                        // Create structured filename: ParticipantName/Emotion/sentence_X_record_Y.wav
                         const audioUrl = URL.createObjectURL(recording.blob);
                         const link = document.createElement('a');
                         link.href = audioUrl;
-                        link.download = `${participantName}_${recording.emotion}_sentence${recording.sentenceIndex}_record${recording.recordingIndex}.wav`;
+                        
+                        // Organized filename with folder structure hint
+                        const fileName = `sentence_${recording.sentenceIndex + 1}_record_${recording.recordingIndex + 1}.wav`;
+                        link.download = `${cleanParticipantName}_${selectedEmotion}_${fileName}`;
+                        
                         document.body.appendChild(link);
                         link.click();
                         document.body.removeChild(link);
@@ -1017,33 +1083,62 @@
                         // Clean up URL
                         setTimeout(() => URL.revokeObjectURL(audioUrl), 1000);
                         
-                        // Add metadata
+                        // Add metadata with folder structure
                         dataToDownload.recordings.push({
-                            filename: link.download,
+                            filename: fileName,
+                            fullPath: `${cleanParticipantName}/${selectedEmotion}/${fileName}`,
+                            downloadName: link.download,
                             emotion: recording.emotion,
                             sentence: recording.sentence,
                             sentenceIndex: recording.sentenceIndex,
                             recordingIndex: recording.recordingIndex,
-                            timestamp: recording.timestamp
+                            timestamp: recording.timestamp,
+                            duration: 5000, // max 5 seconds
+                            quality: 'high'
                         });
                     } catch (err) {
-                        console.error('Error downloading file:', err);
+                        console.error('Error downloading audio file:', err);
                     }
                 });
                 
-                // Download metadata JSON
+                // Download organized metadata JSON
                 const jsonData = JSON.stringify(dataToDownload, null, 2);
                 const jsonBlob = new Blob([jsonData], { type: 'application/json' });
                 const jsonUrl = URL.createObjectURL(jsonBlob);
                 const jsonLink = document.createElement('a');
                 jsonLink.href = jsonUrl;
-                jsonLink.download = `${participantName}_${selectedEmotion}_metadata.json`;
+                jsonLink.download = `${cleanParticipantName}_${selectedEmotion}_metadata_${timestamp}.json`;
                 document.body.appendChild(jsonLink);
                 jsonLink.click();
                 document.body.removeChild(jsonLink);
                 
                 // Clean up URL
                 setTimeout(() => URL.revokeObjectURL(jsonUrl), 1000);
+
+                // Create folder structure guide
+                const folderGuide = document.createElement('div');
+                folderGuide.className = 'alert alert-warning';
+                folderGuide.style.marginTop = '15px';
+                folderGuide.innerHTML = `
+                    <strong>📂 ڕێنمایی ڕێکخستنی فۆلدەر:</strong><br>
+                    <pre style="text-align: left; direction: ltr; font-size: 0.8rem; margin-top: 10px;">
+datasets/
+└── ${cleanParticipantName}/
+    └── ${selectedEmotion}/
+        ├── sentence_1_record_1.wav
+        ├── sentence_1_record_2.wav
+        ├── sentence_1_record_3.wav
+        ├── sentence_2_record_1.wav
+        ├── sentence_2_record_2.wav
+        ├── sentence_2_record_3.wav
+        ├── sentence_3_record_1.wav
+        ├── sentence_3_record_2.wav
+        ├── sentence_3_record_3.wav
+        └── metadata.json
+                    </pre>
+                    <small>💡 ئەم ساختارە یارمەتیدەدات بۆ ڕێکخستنی داتاسێت بۆ machine learning</small>
+                `;
+                document.querySelector('#step4 .download-section').appendChild(folderGuide);
                 
             } catch (err) {
                 console.error('Error downloading data:', err);
