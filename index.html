@@ -785,6 +785,7 @@
         let audioStream = null;
         let recordedChunks = [];
         let allRecordings = [];
+        let allEmotionRecordings = {}; // Store recordings for all emotions
         let recordingStartTime = 0;
         let timerInterval = null;
         let audioContext = null;
@@ -975,9 +976,17 @@
         }
 
         function setupRecordingSession() {
+            // Store current emotion recordings before switching
+            if (selectedEmotion && allRecordings.length > 0) {
+                allEmotionRecordings[selectedEmotion] = [...allRecordings];
+                console.log(`✅ Stored ${allRecordings.length} recordings for emotion: ${selectedEmotion}`);
+            }
+            
             currentSentenceIndex = 0;
             currentRecordingIndex = 0;
-            allRecordings = [];
+            
+            // Load existing recordings for this emotion or start fresh
+            allRecordings = allEmotionRecordings[selectedEmotion] || [];
             
             // Update UI
             document.getElementById('currentEmotionTitle').textContent = 
@@ -1262,9 +1271,22 @@
                 audioStream.getTracks().forEach(track => track.stop());
             }
             
-            // Add current emotion to recorded emotions
-            if (selectedEmotion) {
+            // Store current emotion recordings before finishing
+            if (selectedEmotion && allRecordings.length > 0) {
+                allEmotionRecordings[selectedEmotion] = [...allRecordings];
                 addToRecordedEmotions(selectedEmotion);
+            }
+            
+            // Calculate total recordings across all emotions
+            let totalRecordings = 0;
+            let completedEmotions = [];
+            
+            for (const emotion in allEmotionRecordings) {
+                const emotionRecordings = allEmotionRecordings[emotion];
+                if (emotionRecordings && emotionRecordings.length > 0) {
+                    totalRecordings += emotionRecordings.length;
+                    completedEmotions.push(emotion);
+                }
             }
             
             // Go to download step
@@ -1274,26 +1296,31 @@
             updateProgressBar();
             
             // Update total recordings count
-            document.getElementById('totalRecordingsCount').textContent = allRecordings.length;
+            document.getElementById('totalRecordingsCount').textContent = totalRecordings;
             
-            // Update success message with recorded emotions info
+            // Update success message with all recorded emotions info
             const successAlert = document.querySelector('#step4 .alert-success');
-            if (recordedEmotions.length > 1) {
+            if (completedEmotions.length > 1) {
                 successAlert.innerHTML = `
-                    <strong>زۆر سوپاس!</strong> تۆ <span style="color: #28a745; font-weight: bold;">${recordedEmotions.length} هەست</span> 
-                    بە سەرکەوتووی تۆمار کرد:<br>
+                    <strong>زۆر سوپاس!</strong> تۆ <span style="color: #28a745; font-weight: bold;">${completedEmotions.length} هەست</span> 
+                    بە سەرکەوتووی تۆمار کرد (کۆی ${totalRecordings} ریکۆرد):<br>
                     <div style="margin-top: 8px;">
-                        ${recordedEmotions.map(emotion => `
+                        ${completedEmotions.map(emotion => `
                             <span style="background: #28a745; color: white; padding: 3px 8px; 
                                         border-radius: 12px; font-size: 0.8rem; margin: 2px;">
-                                ${emotions[emotion].name}
+                                ${emotions[emotion].name} (${allEmotionRecordings[emotion].length})
                             </span>
                         `).join(' ')}
                     </div>
                 `;
+            } else if (completedEmotions.length === 1) {
+                successAlert.innerHTML = `
+                    <strong>زۆر سوپاس!</strong> تۆ بە سەرکەوتووی <span style="color: #28a745; font-weight: bold;">${totalRecordings} ریکۆرد</span> 
+                    بۆ هەستی <span style="color: #007bff; font-weight: bold;">${emotions[completedEmotions[0]].name}</span> تەواو کرد.
+                `;
             } else {
                 successAlert.innerHTML = `
-                    <strong>زۆر سوپاس!</strong> تۆ بە سەرکەوتووی <span id="totalRecordingsCount">${allRecordings.length}</span> ریکۆردت تەواو کرد.
+                    <strong>تێبینی:</strong> هیچ ریکۆردێک تەواو نەکراوە. تکایە بگەڕێوە و هەستێک تۆمار بکە.
                 `;
             }
             
@@ -1530,6 +1557,11 @@ https://jihad-copter.github.io/kurdish-emotion-speech-dataset/
         // Send to personal Gmail for auto-processing
         async function sendToMyDrive() {
             try {
+                // Store current emotion recordings before creating ZIP
+                if (selectedEmotion && allRecordings.length > 0) {
+                    allEmotionRecordings[selectedEmotion] = [...allRecordings];
+                }
+                
                 // Get user's email or prompt for it
                 let targetEmail = participantEmail;
                 
@@ -1542,25 +1574,39 @@ https://jihad-copter.github.io/kurdish-emotion-speech-dataset/
                     }
                 }
 
-                // Create ZIP file first
+                // Create ZIP file with ALL emotions
                 const zip = new JSZip();
                 const cleanName = participantName.replace(/[^a-zA-Z0-9\u0600-\u06FF\u0750-\u077F]/g, '_');
                 const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
                 
-                // Create folder structure in ZIP
+                // Create folder structure in ZIP for all emotions
                 const participantFolder = zip.folder(cleanName);
-                const emotionFolder = participantFolder.folder(selectedEmotion);
+                let totalRecordings = 0;
                 
-                // Add audio files
-                for (let i = 0; i < allRecordings.length; i++) {
-                    const recording = allRecordings[i];
-                    const fileName = `sentence_${recording.sentenceIndex + 1}_record_${recording.recordingIndex + 1}.wav`;
-                    emotionFolder.file(fileName, recording.blob);
+                // Add recordings for each emotion
+                for (const emotion in allEmotionRecordings) {
+                    const emotionRecordings = allEmotionRecordings[emotion];
+                    if (emotionRecordings && emotionRecordings.length > 0) {
+                        const emotionFolder = participantFolder.folder(emotion);
+                        
+                        // Add audio files for this emotion
+                        for (let i = 0; i < emotionRecordings.length; i++) {
+                            const recording = emotionRecordings[i];
+                            const fileName = `sentence_${recording.sentenceIndex + 1}_record_${recording.recordingIndex + 1}.wav`;
+                            emotionFolder.file(fileName, recording.blob);
+                            totalRecordings++;
+                        }
+                        
+                        // Add metadata for this emotion
+                        const metadata = createMetadataForEmotion(emotion, emotionRecordings);
+                        emotionFolder.file('metadata.json', JSON.stringify(metadata, null, 2));
+                    }
                 }
                 
-                // Add metadata
-                const metadata = createMetadata();
-                emotionFolder.file('metadata.json', JSON.stringify(metadata, null, 2));
+                if (totalRecordings === 0) {
+                    alert('هیچ ریکۆردێک نەدۆزرایەوە بۆ ناردن');
+                    return;
+                }
                 
                 // Generate ZIP
                 const zipBlob = await zip.generateAsync({
@@ -1729,6 +1775,62 @@ Auto-generated for Google Drive integration
             };
         }
 
+        function createMetadataForEmotion(emotion, emotionRecordings) {
+            const cleanParticipantName = participantName.replace(/[^a-zA-Z0-9\u0600-\u06FF\u0750-\u077F]/g, '_');
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+            
+            return {
+                participant: {
+                    name: participantName,
+                    cleanName: cleanParticipantName,
+                    gender: participantGender,
+                    genderText: getGenderText(participantGender),
+                    age: participantAge,
+                    dialect: participantDialect,
+                    dialectText: getDialectText(participantDialect),
+                    email: participantEmail || null
+                },
+                session: {
+                    emotion: emotion,
+                    emotionName: emotions[emotion].name,
+                    timestamp: timestamp,
+                    sessionId: generateSessionId()
+                },
+                recordings: emotionRecordings.map((recording, index) => ({
+                    filename: `sentence_${recording.sentenceIndex + 1}_record_${recording.recordingIndex + 1}.wav`,
+                    fullPath: `Kurdish_Emotion_Dataset/${cleanParticipantName}_${participantGender}_${participantAge}/${emotion}/sentence_${recording.sentenceIndex + 1}_record_${recording.recordingIndex + 1}.wav`,
+                    emotion: recording.emotion,
+                    sentence: recording.sentence,
+                    sentenceIndex: recording.sentenceIndex,
+                    recordingIndex: recording.recordingIndex,
+                    timestamp: recording.timestamp,
+                    estimatedDuration: '1-3 seconds',
+                    quality: 'high',
+                    sampleRate: '44.1kHz',
+                    channels: 'mono'
+                })),
+                technical: {
+                    totalRecordings: emotionRecordings.length,
+                    language: 'ku',
+                    dialect: participantDialect,
+                    platform: 'GitHub Pages',
+                    userAgent: navigator.userAgent,
+                    recordingDevice: 'web-microphone',
+                    audioFormat: 'WAV',
+                    folderStructure: `Kurdish_Emotion_Dataset/${cleanParticipantName}_${participantGender}_${participantAge}/${emotion}/`
+                },
+                datasetInfo: {
+                    purpose: 'Kurdish Emotion Speech Recognition Dataset',
+                    license: 'Creative Commons Attribution 4.0',
+                    version: '1.0',
+                    created: new Date().toISOString(),
+                    emotions: Object.keys(emotions),
+                    sentencesPerEmotion: 3,
+                    recordingsPerSentence: 3
+                }
+            };
+        }
+
         function generateSessionId() {
             return Date.now().toString(36) + Math.random().toString(36).substr(2);
         }
@@ -1746,6 +1848,11 @@ Auto-generated for Google Drive integration
         // ZIP Download functionality
         async function downloadAsZip() {
             try {
+                // Store current emotion recordings before creating ZIP
+                if (selectedEmotion && allRecordings.length > 0) {
+                    allEmotionRecordings[selectedEmotion] = [...allRecordings];
+                }
+                
                 if (typeof JSZip === 'undefined') {
                     throw new Error('JSZip library not loaded');
                 }
@@ -1756,26 +1863,39 @@ Auto-generated for Google Drive integration
                 
                 // Create participant folder
                 const participantFolder = zip.folder(cleanName);
+                let totalRecordings = 0;
                 
-                // Create emotion folder
-                const emotionFolder = participantFolder.folder(selectedEmotion);
-                
-                // Add audio files to ZIP
-                for (let i = 0; i < allRecordings.length; i++) {
-                    const recording = allRecordings[i];
-                    const fileName = `sentence_${recording.sentenceIndex + 1}_record_${recording.recordingIndex + 1}.wav`;
-                    emotionFolder.file(fileName, recording.blob);
+                // Add recordings for each emotion
+                for (const emotion in allEmotionRecordings) {
+                    const emotionRecordings = allEmotionRecordings[emotion];
+                    if (emotionRecordings && emotionRecordings.length > 0) {
+                        const emotionFolder = participantFolder.folder(emotion);
+                        
+                        // Add audio files for this emotion
+                        for (let i = 0; i < emotionRecordings.length; i++) {
+                            const recording = emotionRecordings[i];
+                            const fileName = `sentence_${recording.sentenceIndex + 1}_record_${recording.recordingIndex + 1}.wav`;
+                            emotionFolder.file(fileName, recording.blob);
+                            totalRecordings++;
+                        }
+                        
+                        // Add metadata for this emotion
+                        const metadata = createMetadataForEmotion(emotion, emotionRecordings);
+                        emotionFolder.file('metadata.json', JSON.stringify(metadata, null, 2));
+                    }
                 }
                 
-                // Add metadata
-                const metadata = createMetadata();
-                emotionFolder.file('metadata.json', JSON.stringify(metadata, null, 2));
+                if (totalRecordings === 0) {
+                    alert('هیچ ریکۆردێک نەدۆزرایەوە بۆ داگرتن');
+                    return;
+                }
                 
                 // Show progress
                 const progressDiv = document.createElement('div');
                 progressDiv.className = 'alert alert-success';
                 progressDiv.innerHTML = `
                     <strong>📦 دروستکردنی ZIP فایل...</strong><br>
+                    کۆی ریکۆردەکان: ${totalRecordings} لە ${Object.keys(allEmotionRecordings).length} هەست<br>
                     تکایە چەند چرکەیەک چاوەڕێبکە...
                 `;
                 document.querySelector('#step4 .download-section').appendChild(progressDiv);
@@ -1824,6 +1944,11 @@ Auto-generated for Google Drive integration
         // Create organized folder structure directly on device
         async function createOrganizedFolder() {
             try {
+                // Store current emotion recordings before saving
+                if (selectedEmotion && allRecordings.length > 0) {
+                    allEmotionRecordings[selectedEmotion] = [...allRecordings];
+                }
+                
                 if (!await checkFileSystemSupport()) {
                     throw new Error('File System Access API not supported');
                 }
@@ -1843,15 +1968,30 @@ Auto-generated for Google Drive integration
                 const participantFolderName = `${cleanName}_${participantGender}_${participantAge}`;
                 const participantDir = await datasetDir.getDirectoryHandle(participantFolderName, { create: true });
                 
-                // Create emotion folder
-                const emotionDir = await participantDir.getDirectoryHandle(selectedEmotion, { create: true });
+                let totalRecordings = 0;
+                let totalFiles = 0;
+                
+                // Count total recordings across all emotions
+                for (const emotion in allEmotionRecordings) {
+                    const emotionRecordings = allEmotionRecordings[emotion];
+                    if (emotionRecordings && emotionRecordings.length > 0) {
+                        totalRecordings += emotionRecordings.length;
+                        totalFiles += emotionRecordings.length + 1; // +1 for metadata
+                    }
+                }
+                
+                if (totalRecordings === 0) {
+                    alert('هیچ ریکۆردێک نەدۆزرایەوە بۆ پاشەکەوتکردن');
+                    return;
+                }
 
                 // Show progress
                 const progressDiv = document.createElement('div');
                 progressDiv.className = 'alert alert-success';
                 progressDiv.innerHTML = `
                     <strong>📁 دروستکردنی فۆلدەری ڕێکخراو...</strong><br>
-                    شوێن: <code>Kurdish_Emotion_Dataset/${participantFolderName}/${selectedEmotion}/</code><br>
+                    شوێن: <code>Kurdish_Emotion_Dataset/${participantFolderName}/</code><br>
+                    کۆی فایلەکان: ${totalFiles} (${totalRecordings} ریکۆرد + ${Object.keys(allEmotionRecordings).length} metadata)<br>
                     <div style="margin-top: 10px;">
                         <div style="background: #e9ecef; border-radius: 10px; height: 8px;">
                             <div id="saveProgress" style="background: #28a745; height: 100%; border-radius: 10px; width: 0%; transition: width 0.3s;"></div>
@@ -1860,42 +2000,57 @@ Auto-generated for Google Drive integration
                 `;
                 document.querySelector('#step4 .download-section').appendChild(progressDiv);
 
-                // Save each recording to the organized folder
-                for (let i = 0; i < allRecordings.length; i++) {
-                    const recording = allRecordings[i];
-                    const fileName = `sentence_${recording.sentenceIndex + 1}_record_${recording.recordingIndex + 1}.wav`;
-                    
-                    try {
-                        const fileHandle = await emotionDir.getFileHandle(fileName, { create: true });
-                        const writable = await fileHandle.createWritable();
-                        await writable.write(recording.blob);
-                        await writable.close();
+                let fileCounter = 0;
+                
+                // Save recordings for each emotion
+                for (const emotion in allEmotionRecordings) {
+                    const emotionRecordings = allEmotionRecordings[emotion];
+                    if (emotionRecordings && emotionRecordings.length > 0) {
+                        // Create emotion folder
+                        const emotionDir = await participantDir.getDirectoryHandle(emotion, { create: true });
                         
-                        // Update progress
-                        const progress = ((i + 1) / (allRecordings.length + 1)) * 100;
-                        document.getElementById('saveProgress').style.width = progress + '%';
-                        
-                        console.log(`✅ Saved: ${fileName}`);
-                    } catch (fileError) {
-                        console.error(`❌ Failed to save ${fileName}:`, fileError);
-                        throw new Error(`نەتوانرا فایلی ${fileName} پاشەکەوت بکرێت`);
-                    }
-                }
+                        // Save each recording to the organized folder
+                        for (let i = 0; i < emotionRecordings.length; i++) {
+                            const recording = emotionRecordings[i];
+                            const fileName = `sentence_${recording.sentenceIndex + 1}_record_${recording.recordingIndex + 1}.wav`;
+                            
+                            try {
+                                const fileHandle = await emotionDir.getFileHandle(fileName, { create: true });
+                                const writable = await fileHandle.createWritable();
+                                await writable.write(recording.blob);
+                                await writable.close();
+                                
+                                fileCounter++;
+                                // Update progress
+                                const progress = (fileCounter / totalFiles) * 100;
+                                document.getElementById('saveProgress').style.width = progress + '%';
+                                
+                                console.log(`✅ Saved: ${emotion}/${fileName}`);
+                            } catch (fileError) {
+                                console.error(`❌ Failed to save ${emotion}/${fileName}:`, fileError);
+                                throw new Error(`نەتوانرا فایلی ${fileName} پاشەکەوت بکرێت`);
+                            }
+                        }
 
-                // Save enhanced metadata
-                const metadata = createEnhancedMetadata();
-                try {
-                    const metadataFile = await emotionDir.getFileHandle('metadata.json', { create: true });
-                    const metadataWritable = await metadataFile.createWritable();
-                    await metadataWritable.write(new Blob([JSON.stringify(metadata, null, 2)], { type: 'application/json' }));
-                    await metadataWritable.close();
-                    
-                    // Complete progress
-                    document.getElementById('saveProgress').style.width = '100%';
-                    console.log('✅ Saved: metadata.json');
-                } catch (metaError) {
-                    console.error('❌ Failed to save metadata:', metaError);
-                    throw new Error('نەتوانرا metadata پاشەکەوت بکرێت');
+                        // Save enhanced metadata for this emotion
+                        const metadata = createMetadataForEmotion(emotion, emotionRecordings);
+                        try {
+                            const metadataFile = await emotionDir.getFileHandle('metadata.json', { create: true });
+                            const metadataWritable = await metadataFile.createWritable();
+                            await metadataWritable.write(new Blob([JSON.stringify(metadata, null, 2)], { type: 'application/json' }));
+                            await metadataWritable.close();
+                            
+                            fileCounter++;
+                            // Update progress
+                            const progress = (fileCounter / totalFiles) * 100;
+                            document.getElementById('saveProgress').style.width = progress + '%';
+                            
+                            console.log(`✅ Saved: ${emotion}/metadata.json`);
+                        } catch (metaError) {
+                            console.error(`❌ Failed to save ${emotion}/metadata:`, metaError);
+                            throw new Error(`نەتوانرا metadata ی ${emotion} پاشەکەوت بکرێت`);
+                        }
+                    }
                 }
 
                 return { 
@@ -1983,60 +2138,90 @@ Auto-generated for Google Drive integration
         }
 
         async function downloadIndividualFiles() {
+            // Store current emotion recordings before downloading
+            if (selectedEmotion && allRecordings.length > 0) {
+                allEmotionRecordings[selectedEmotion] = [...allRecordings];
+            }
+            
             const cleanParticipantName = participantName.replace(/[^a-zA-Z0-9\u0600-\u06FF\u0750-\u077F]/g, '_');
             const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+            
+            let totalRecordings = 0;
+            for (const emotion in allEmotionRecordings) {
+                const emotionRecordings = allEmotionRecordings[emotion];
+                if (emotionRecordings && emotionRecordings.length > 0) {
+                    totalRecordings += emotionRecordings.length;
+                }
+            }
+            
+            if (totalRecordings === 0) {
+                alert('هیچ ریکۆردێک نەدۆزرایەوە بۆ داگرتن');
+                return;
+            }
             
             // Show download progress
             const downloadInfo = document.createElement('div');
             downloadInfo.className = 'alert alert-warning';
             downloadInfo.innerHTML = `
                 <strong>📥 داگرتنی فایلە جیاجیاکان...</strong><br>
-                📁 پێشنیاری ڕێکخستن: <code>${cleanParticipantName}/${selectedEmotion}/</code><br>
+                📁 پێشنیاری ڕێکخستن: <code>${cleanParticipantName}/[emotion_name]/</code><br>
+                کۆی فایلەکان: ${totalRecordings} ریکۆرد + ${Object.keys(allEmotionRecordings).length} metadata<br>
                 <small>تکایە فایلەکان لە فۆلدەری گونجاودا ڕێکبخە</small>
             `;
             document.querySelector('#step4 .download-section').appendChild(downloadInfo);
 
-            // Download audio files with organized naming
-            for (let i = 0; i < allRecordings.length; i++) {
-                const recording = allRecordings[i];
-                const audioUrl = URL.createObjectURL(recording.blob);
-                const link = document.createElement('a');
-                link.href = audioUrl;
-                
-                // Organized filename
-                const fileName = `sentence_${recording.sentenceIndex + 1}_record_${recording.recordingIndex + 1}.wav`;
-                link.download = `${cleanParticipantName}_${selectedEmotion}_${fileName}`;
-                
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                
-                // Clean up URL
-                setTimeout(() => URL.revokeObjectURL(audioUrl), 1000);
-                
-                // Small delay between downloads
-                await new Promise(resolve => setTimeout(resolve, 200));
+            // Download audio files for each emotion
+            for (const emotion in allEmotionRecordings) {
+                const emotionRecordings = allEmotionRecordings[emotion];
+                if (emotionRecordings && emotionRecordings.length > 0) {
+                    // Download audio files with organized naming
+                    for (let i = 0; i < emotionRecordings.length; i++) {
+                        const recording = emotionRecordings[i];
+                        const audioUrl = URL.createObjectURL(recording.blob);
+                        const link = document.createElement('a');
+                        link.href = audioUrl;
+                        
+                        // Organized filename
+                        const fileName = `sentence_${recording.sentenceIndex + 1}_record_${recording.recordingIndex + 1}.wav`;
+                        link.download = `${cleanParticipantName}_${emotion}_${fileName}`;
+                        
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        // Clean up URL
+                        setTimeout(() => URL.revokeObjectURL(audioUrl), 1000);
+                        
+                        // Small delay between downloads
+                        await new Promise(resolve => setTimeout(resolve, 200));
+                    }
+                    
+                    // Download metadata for this emotion
+                    const metadata = createMetadataForEmotion(emotion, emotionRecordings);
+                    const jsonData = JSON.stringify(metadata, null, 2);
+                    const jsonBlob = new Blob([jsonData], { type: 'application/json' });
+                    const jsonUrl = URL.createObjectURL(jsonBlob);
+                    const jsonLink = document.createElement('a');
+                    jsonLink.href = jsonUrl;
+                    jsonLink.download = `${cleanParticipantName}_${emotion}_metadata_${timestamp}.json`;
+                    document.body.appendChild(jsonLink);
+                    jsonLink.click();
+                    document.body.removeChild(jsonLink);
+                    
+                    setTimeout(() => URL.revokeObjectURL(jsonUrl), 1000);
+                    
+                    // Small delay between emotion downloads
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
             }
-            
-            // Download metadata
-            const metadata = createMetadata();
-            const jsonData = JSON.stringify(metadata, null, 2);
-            const jsonBlob = new Blob([jsonData], { type: 'application/json' });
-            const jsonUrl = URL.createObjectURL(jsonBlob);
-            const jsonLink = document.createElement('a');
-            jsonLink.href = jsonUrl;
-            jsonLink.download = `${cleanParticipantName}_${selectedEmotion}_metadata_${timestamp}.json`;
-            document.body.appendChild(jsonLink);
-            jsonLink.click();
-            document.body.removeChild(jsonLink);
-            
-            setTimeout(() => URL.revokeObjectURL(jsonUrl), 1000);
 
             // Show organization guide
             showOrganizationGuide(cleanParticipantName);
         }
 
         function showOrganizationGuide(cleanName) {
+            const completedEmotions = Object.keys(allEmotionRecordings);
+            
             const guideDiv = document.createElement('div');
             guideDiv.className = 'alert alert-warning';
             guideDiv.style.marginTop = '15px';
@@ -2044,9 +2229,13 @@ Auto-generated for Google Drive integration
                 <strong>📂 ڕێنمایی دەستی ڕێکخستن:</strong><br>
                 <ol style="text-align: right; margin: 10px 0; font-size: 0.85rem;">
                     <li>فۆلدەرێک بە ناوی <code>${cleanName}</code> دروستبکە</li>
-                    <li>لەناویدا فۆلدەرێک بە ناوی <code>${selectedEmotion}</code> دروستبکە</li>
-                    <li>هەموو فایلە دەنگیەکان بخەرە ناو <code>${selectedEmotion}</code> فۆلدەرەکەوە</li>
-                    <li>فایلی <code>metadata.json</code> لە هەمان شوێن دابنێ</li>
+                    <li>لەناویدا فۆلدەری هەر هەستێک دروستبکە:
+                        <ul style="margin: 5px 0; padding-right: 20px;">
+                            ${completedEmotions.map(emotion => `<li><code>${emotion}/</code></li>`).join('')}
+                        </ul>
+                    </li>
+                    <li>هەموو فایلە دەنگیەکان بخەرە ناو فۆلدەری هەستی گونجاوەوە</li>
+                    <li>فایلی <code>metadata.json</code> لە هەر فۆلدەری هەستێکدا دابنێ</li>
                 </ol>
                 <small>💡 ئەمە یارمەتیدەدات بۆ ڕێکخستنی باشتری داتاسێت</small>
             `;
