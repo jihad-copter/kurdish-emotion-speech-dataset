@@ -944,8 +944,24 @@
                 
                 // Store current emotion recordings before switching (using OLD selectedEmotion)
                 if (selectedEmotion && allRecordings.length > 0) {
+                    console.log(`\n🔄 STORING EMOTION DATA:`);
+                    console.log(`   OLD emotion: ${selectedEmotion}`);
+                    console.log(`   Recordings to store: ${allRecordings.length}`);
+                    console.log(`   Recording details:`, allRecordings.map(r => `${r.emotion}-sentence_${r.sentenceIndex + 1}_record_${r.recordingIndex + 1}`));
+                    
+                    // Verify all recordings belong to the correct emotion
+                    const wrongEmotionRecordings = allRecordings.filter(r => r.emotion !== selectedEmotion);
+                    if (wrongEmotionRecordings.length > 0) {
+                        console.error(`🚨 CRITICAL ERROR: Found ${wrongEmotionRecordings.length} recordings with wrong emotion!`);
+                        console.error(`   Expected emotion: ${selectedEmotion}`);
+                        console.error(`   Wrong recordings:`, wrongEmotionRecordings.map(r => `${r.emotion}-sentence_${r.sentenceIndex + 1}_record_${r.recordingIndex + 1}`));
+                    }
+                    
                     allEmotionRecordings[selectedEmotion] = [...allRecordings];
                     console.log(`✅ Stored ${allRecordings.length} recordings for OLD emotion: ${selectedEmotion}`);
+                    
+                    // Verify storage
+                    console.log(`   Verification: allEmotionRecordings[${selectedEmotion}].length = ${allEmotionRecordings[selectedEmotion].length}`);
                 }
                 
                 // NOW change to new emotion
@@ -1016,9 +1032,18 @@
             currentSentenceIndex = 0;
             currentRecordingIndex = 0;
             
-            // Load existing recordings for this emotion or start fresh
-            allRecordings = allEmotionRecordings[selectedEmotion] || [];
-            console.log(`📂 Loaded ${allRecordings.length} existing recordings for emotion: ${selectedEmotion}`);
+            // Load existing recordings for this emotion or start fresh (ALWAYS CREATE NEW COPY)
+            const existingRecordings = allEmotionRecordings[selectedEmotion];
+            if (existingRecordings && existingRecordings.length > 0) {
+                allRecordings = [...existingRecordings]; // Create new copy
+                console.log(`📂 Loaded ${allRecordings.length} existing recordings for emotion: ${selectedEmotion} (COPIED)`);
+            } else {
+                allRecordings = []; // Start fresh
+                console.log(`📂 Starting fresh recording session for emotion: ${selectedEmotion}`);
+            }
+            
+            // Verify no reference issues
+            console.log(`🔍 Array reference check: allRecordings === allEmotionRecordings[${selectedEmotion}] = ${allRecordings === allEmotionRecordings[selectedEmotion]}`);
             
             // Update UI
             document.getElementById('currentEmotionTitle').textContent = 
@@ -1033,6 +1058,18 @@
             
             displayCurrentSentence();
             updateRecordingStatus();
+            
+            // Clear and rebuild recordings list UI
+            const recordingsList = document.getElementById('recordingsList');
+            recordingsList.innerHTML = '';
+            
+            // Rebuild UI for existing recordings
+            if (allRecordings.length > 0) {
+                console.log(`🔄 Rebuilding UI for ${allRecordings.length} existing recordings`);
+                allRecordings.forEach((recording, index) => {
+                    addRecordingToList(recording);
+                });
+            }
             
             // Update session progress indicator
             updateSessionProgress();
@@ -1066,14 +1103,11 @@
             const sessionProgress = document.getElementById('sessionProgress');
             const sessionProgressContent = document.getElementById('sessionProgressContent');
             
-            // Store current recordings first
-            if (selectedEmotion && allRecordings.length > 0) {
-                allEmotionRecordings[selectedEmotion] = [...allRecordings];
-            }
-            
+            // DO NOT store here! Only read existing data
             let totalRecordings = 0;
             let emotionsSummary = [];
             
+            // Count stored recordings
             for (const emotion in allEmotionRecordings) {
                 const recordings = allEmotionRecordings[emotion];
                 if (recordings && recordings.length > 0) {
@@ -1082,18 +1116,22 @@
                 }
             }
             
-            // Add current emotion if not stored yet
-            if (selectedEmotion && allRecordings.length > 0 && 
-                (!allEmotionRecordings[selectedEmotion] || 
-                 allEmotionRecordings[selectedEmotion].length !== allRecordings.length)) {
-                // Update the display with current recordings
-                const currentEmotionIndex = emotionsSummary.findIndex(item => item.startsWith(emotions[selectedEmotion].name));
-                if (currentEmotionIndex >= 0) {
-                    emotionsSummary[currentEmotionIndex] = `${emotions[selectedEmotion].name}: ${allRecordings.length}`;
-                    totalRecordings = totalRecordings - allEmotionRecordings[selectedEmotion].length + allRecordings.length;
-                } else {
-                    emotionsSummary.push(`${emotions[selectedEmotion].name}: ${allRecordings.length}`);
-                    totalRecordings += allRecordings.length;
+            // Add current emotion recording count (if different from stored)
+            if (selectedEmotion && allRecordings.length > 0) {
+                const storedCount = allEmotionRecordings[selectedEmotion] ? allEmotionRecordings[selectedEmotion].length : 0;
+                
+                if (storedCount !== allRecordings.length) {
+                    // Update display to show current progress
+                    const currentEmotionIndex = emotionsSummary.findIndex(item => item.startsWith(emotions[selectedEmotion].name));
+                    if (currentEmotionIndex >= 0) {
+                        // Replace existing count with current count
+                        emotionsSummary[currentEmotionIndex] = `${emotions[selectedEmotion].name}: ${allRecordings.length}`;
+                        totalRecordings = totalRecordings - storedCount + allRecordings.length;
+                    } else {
+                        // Add new emotion with current count
+                        emotionsSummary.push(`${emotions[selectedEmotion].name}: ${allRecordings.length}`);
+                        totalRecordings += allRecordings.length;
+                    }
                 }
             }
             
@@ -1277,27 +1315,45 @@
                 participant: participantName
             };
             
+            console.log(`\n📝 SAVING RECORDING:`);
+            console.log(`   Emotion: ${recording.emotion}`);
+            console.log(`   Sentence: ${recording.sentence}`);
+            console.log(`   File: sentence_${recording.sentenceIndex + 1}_record_${recording.recordingIndex + 1}.wav`);
+            
             allRecordings.push(recording);
-            console.log(`📝 Saved recording for ${selectedEmotion}: ${allRecordings.length} total recordings`);
-            console.log(`📊 All emotions state:`, Object.keys(allEmotionRecordings).map(key => `${key}: ${allEmotionRecordings[key] ? allEmotionRecordings[key].length : 0}`));
+            console.log(`   New allRecordings.length: ${allRecordings.length}`);
+            console.log(`   Current allRecordings contents:`, allRecordings.map(r => `${r.emotion}-sentence_${r.sentenceIndex + 1}_record_${r.recordingIndex + 1}`));
+            
+            console.log(`📊 All emotions state BEFORE updateSessionProgress:`, Object.keys(allEmotionRecordings).map(key => `${key}: ${allEmotionRecordings[key] ? allEmotionRecordings[key].length : 0}`));
             
             // Add to UI
             addRecordingToList(recording);
             
-            // Update session progress
+            // Update session progress (should NOT store)
             updateSessionProgress();
+            
+            console.log(`📊 All emotions state AFTER updateSessionProgress:`, Object.keys(allEmotionRecordings).map(key => `${key}: ${allEmotionRecordings[key] ? allEmotionRecordings[key].length : 0}`));
         }
 
         function addRecordingToList(recording) {
             const recordingsList = document.getElementById('recordingsList');
             const recordingItem = document.createElement('div');
             recordingItem.className = 'recording-item';
+            
+            // Find the correct index of this recording in allRecordings
+            const recordingIndex = allRecordings.findIndex(r => 
+                r.sentenceIndex === recording.sentenceIndex && 
+                r.recordingIndex === recording.recordingIndex &&
+                r.emotion === recording.emotion &&
+                r.timestamp === recording.timestamp
+            );
+            
             recordingItem.innerHTML = `
                 <div>
                     <strong>${recording.sentence}</strong><br>
-                    ریکۆردی ${currentRecordingIndex + 1} - ${new Date(recording.timestamp).toLocaleTimeString('ku')}
+                    ریکۆردی ${recording.recordingIndex + 1} - ${new Date(recording.timestamp).toLocaleTimeString('ku')}
                 </div>
-                <button class="btn" onclick="playRecording(${allRecordings.length - 1})" style="margin: 0;">گوێگرتن</button>
+                <button class="btn" onclick="playRecording(${recordingIndex})" style="margin: 0;">گوێگرتن</button>
             `;
             recordingsList.appendChild(recordingItem);
         }
